@@ -1,4 +1,4 @@
-package com.zhangzc.bookauth;
+package java.com.zhangzc.bookauth;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

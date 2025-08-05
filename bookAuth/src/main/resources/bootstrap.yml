@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: fb-auth
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 47.108.58.72:8848
+        grpc:
+          server-addr: 47.108.58.72:9848
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 47.108.58.72:8848
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+        file-extension: yaml
+        extension-configs:
+
+logging:
+  level:
+    org.springframework.cache: DEBUG
+    com.alibaba.nacos: INFO
+    org.springframework.boot.autoconfigure.jdbc: DEBUG  # 查看数据源加载详情
+
+server:
+  port: 8547

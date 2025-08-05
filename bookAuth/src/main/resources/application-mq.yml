@@ -1,0 +1,21 @@
+spring:
+  rabbitmq:
+    host: 119.45.4.154        # RabbitMQ服务器地址
+    port: 5672             # 默认AMQP端口
+    username: mikasa        # 默认用户名
+    password: mikasa123        # 默认密码
+    virtual-host: /book       # 默认虚拟主机
+    connection-timeout: 15000ms  # 连接超时时间
+
+    # 发布确认配置
+    publisher-confirm-type: correlated  # 启用发布确认
+    publisher-returns: true             # 启用发布返回
+
+    # 消费者配置
+    listener:
+      simple:
+        acknowledge-mode: auto          # 自动确认模式
+        concurrency: 5                  # 最小消费者数量
+        max-concurrency: 10             # 最大消费者数量
+        prefetch: 1                     # 预取消息数量
+        default-requeue-rejected: false  # 拒绝的消息是否重新入队
