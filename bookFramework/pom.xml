@@ -21,6 +21,7 @@
         <!-- 接口日志组件 -->
         <module>fakebook-spring-boot-start-biz-operationlog</module>
         <module>fakebook-spring-boot-start-jackon</module>
+        <module>fakebook-spring-boot-start-context</module>
     </modules>
 
     <!-- 指定父项目 -->

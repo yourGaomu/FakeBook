@@ -1,28 +1,38 @@
+server:
+  port: 8080
+
 spring:
   application:
-    name: fb-auth
+    name: book-auth  # 应用名称，需与Nacos配置文件名匹配
   cloud:
     nacos:
-      discovery:
-        server-addr: 47.108.58.72:8848
-        grpc:
-          server-addr: 47.108.58.72:9848
-        namespace: 758b786a-91d2-4183-a473-896187866151
+      discovery: # 服务注册发现配置
+        server-addr: 47.108.58.72:8848  # Nacos服务地址
+        namespace: 758b786a-91d2-4183-a473-896187866151  # 命名空间ID
         username: nacos
         password: nacos
-      config:
-        server-addr: 47.108.58.72:8848
-        namespace: 758b786a-91d2-4183-a473-896187866151
+      config: # 配置中心配置
+        server-addr: 47.108.58.72:8848  # 与discovery一致可省略
+        namespace: 758b786a-91d2-4183-a473-896187866151  # 与discovery一致可省略
         username: nacos
         password: nacos
-        file-extension: yaml
+        file-extension: yaml  # 配置文件格式
         extension-configs:
+          - data-id: book_saToken.yaml
+            group: saToken
+            refresh: true
+          - data-id: book_RabbitMQ.yaml
+            group: amqp
+            refresh: true
+          - data-id: book_Redis.yaml
+            group: redis
+            refresh: true
+          - data-id: book_Mail.yaml
+            group: mail
+            refresh: true
 
-logging:
-  level:
-    org.springframework.cache: DEBUG
-    com.alibaba.nacos: INFO
-    org.springframework.boot.autoconfigure.jdbc: DEBUG  # 查看数据源加载详情
 
-server:
-  port: 8547
+  # 关键：导入Nacos配置（解决No spring.config.import set错误）
+  config:
+    import:
+      - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?group=DEFAULT_GROUP&namespace=${spring.cloud.nacos.config.namespace}

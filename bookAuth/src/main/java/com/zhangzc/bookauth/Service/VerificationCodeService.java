@@ -11,10 +11,9 @@ public interface VerificationCodeService {
     /**
      * 发送短信验证码
      *
-     *
      * @param sendVerificationCodeReqVO
      * @return
      */
-    R send(Map<String,String> sendVerificationCodeReqVO) throws BizException;
+    R send(Map<String, String> sendVerificationCodeReqVO) throws BizException;
 }
 

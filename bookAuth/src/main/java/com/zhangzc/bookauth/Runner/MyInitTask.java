@@ -37,10 +37,11 @@ public class MyInitTask implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        log.info("==> 服务启动，开始同步角色权限数据到 Redis 中...");
+        // 绿色文本（常用作成功/提示信息）
+        log.info("\033[32m==> 服务启动，开始同步角色权限数据到 Redis 中...\033[0m");
 
         if (redisUtil.hasKey(PUSH_PERMISSION_FLAG)) {
-            log.info("==> 服务启动，Redis 中已存在权限同步标记，跳过同步...");
+            log.info("\033[32m==> 服务启动，Redis 中已存在权限同步标记，跳过同步...\033[0m");
             return;
         }
         try {
@@ -51,6 +52,9 @@ public class MyInitTask implements ApplicationRunner {
             //如果角色不为空
             if (!roles.isEmpty()) {
                 List<Long> roleIds = roles.stream().map(TRole::getId).toList();
+                //维护一个角色ID到角色Key的映射
+                Map<Long, String> roleIdToRoleKeyMap = roles.stream().collect(Collectors.toMap(TRole::getId, TRole::getRoleKey));
+
                 //根据这些角色id查询出对应的权限集合
                 List<TRolePermissionRel> rolePermissionReals = tRolePermissionRelService.lambdaQuery().in(TRolePermissionRel::getRoleId, roleIds).list();
 
@@ -84,16 +88,19 @@ public class MyInitTask implements ApplicationRunner {
 
                 // 同步至 Redis 中，方便后续网关查询鉴权使用
                 roleIdToPermissionsMap.forEach((roleId, rolePermissions) -> {
-                    String key = RedisKeyConstants.buildRolePermissionsKey(roleId);
-                    redisUtil.set(key, rolePermissions, 60 * 60 * 24);
+                    // 构建 Redis Key
+                    String key = RedisKeyConstants.buildRolePermissionsKey(roleIdToRoleKeyMap.get(roleId));
+                    //获取权限标识
+                    List<String> permissionKeys = rolePermissions.stream().map(TPermission::getPermissionKey).toList();
+                    redisUtil.set(key, permissionKeys, 60 * 60 * 24);
                 });
 
             }
             // 设置权限同步标记
             redisUtil.set(PUSH_PERMISSION_FLAG, "1", 60 * 60 * 24);
-            log.info("==> 服务启动，成功同步角色权限数据到 Redis 中...");
+            log.info("\033[32m==> 服务启动，成功同步角色权限数据到 Redis 中...\033[0m");
         } catch (Exception e) {
-            log.info("==> 同步角色权限失败，请重试");
+            log.info("\033[31m==> 同步角色权限失败，请重试\033[0m");
         }
     }
 }

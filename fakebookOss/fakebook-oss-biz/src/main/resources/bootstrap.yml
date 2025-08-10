@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: fakebook-oss-biz  # 应用名称，需与Nacos配置文件名匹配
+
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 47.108.58.72:8848  # 主端口，gRPC端口会自动推导（8848+1000=9848）
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 47.108.58.72:8848  # 与注册中心地址一致，可复用
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+        file-extension: yaml
+        extension-configs:
+          - data-id: book_Minio.yaml
+            group: oss
+            refresh: true  # 支持动态刷新
+
+
+    # 导入主配置文件（应用名.yaml）
+    config:
+      import:
+        - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?group=DEFAULT_GROUP&namespace=${spring.cloud.nacos.config.namespace}
+
+  server:
+    port: 8077

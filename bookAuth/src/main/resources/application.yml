@@ -1,15 +1,16 @@
-server:
-  port: 8080
-
 spring:
   profiles:
-    active: mysql,saToken,redis,mail,mq
+    active: mysql,mail  # 激活的配置文件后缀
   mail:
-    host: smtp.qq.com # 邮件服务器的地址，小哈这里使用的 QQ 邮件
-    username: 2823626561@qq.com # 发送邮件的邮箱账号
-    password: phuggewtwvgwdecf # 授权码，或发送邮件的邮箱账号的密码
-    default-encoding: utf-8 # 邮件内容的字符编码
-    protocol: smtps # 邮件传输协议：smtps 表示SMTP over SSL，是一种加密的SMTP连接方式，用于确保邮件传输的安全性。
-    port: 465 # 邮件服务器的端口号：465 是 SMTPS（SMTP over SSL）的常用端口号，用于加密的邮件传输。
+    host: smtp.qq.com
+    username: 2823626561@qq.com
+    password: phuggewtwvgwdecf  # 注意：生产环境建议用环境变量注入
+    default-encoding: utf-8
+    protocol: smtps
+    port: 465
 
-
+logging:
+  level:
+    org.springframework.cache: DEBUG
+    com.alibaba.nacos: INFO
+    org.springframework.boot.autoconfigure.jdbc: DEBUG

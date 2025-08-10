@@ -2,15 +2,16 @@ package com.zhangzc.bookauth.Service.impl;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
-import com.google.common.collect.Lists;
 import com.zhangzc.bookauth.Const.RedisKeyConstants;
 import com.zhangzc.bookauth.Const.RoleConstants;
 import com.zhangzc.bookauth.Enum.DeletedEnum;
 import com.zhangzc.bookauth.Enum.LoginTypeEnum;
+import com.zhangzc.bookauth.Enum.ResponseCodeEnum;
 import com.zhangzc.bookauth.Enum.StatusEnum;
 import com.zhangzc.bookauth.Pojo.Vo.UserLoginReqVO;
 import com.zhangzc.bookauth.Pojo.domain.TUser;
 import com.zhangzc.bookauth.Pojo.domain.TUserRoleRel;
+import com.zhangzc.bookauth.Service.TRoleService;
 import com.zhangzc.bookauth.Service.TUserRoleRelService;
 import com.zhangzc.bookauth.Service.TUserService;
 import com.zhangzc.bookauth.Service.UserService;
@@ -19,17 +20,20 @@ import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Exceptions.ExceptionEnum;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
+import com.zhangzc.fakebookspringbootstartcontext.Const.LoginUserContextHolder;
 import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -39,7 +43,9 @@ public class UserServiceImpl implements UserService {
 
     private final TUserService tuserService;
     private final TUserRoleRelService tuserRoleRelService;
+    private final TRoleService tRoleService;
     private final RedisUtil redisUtil;
+    private final PasswordEncoder passwordEncoder;
 
 
     @Override
@@ -87,9 +93,29 @@ public class UserServiceImpl implements UserService {
                     userId = userDO.getId();
                 }
                 break;
-            case PASSWORD: // 密码登录
-                // todo
+            case PASSWORD:
+                // 密码登录
+                String password = userLoginReqVO.getPassword();
+                // 根据手机号查询
+                TUser userDO1 = tuserService.lambdaQuery().eq(TUser::getPhone, phone).one();
 
+                // 判断该手机号是否注册
+                if (Objects.isNull(userDO1)) {
+                    throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
+                }
+
+                // 拿到密文密码
+                String encodePassword = userDO1.getPassword();
+
+                // 匹配密码是否一致
+                boolean isPasswordCorrect = passwordEncoder.matches(password, encodePassword);
+
+                // 如果不正确，则抛出业务异常，提示用户名或者密码不正确
+                if (!isPasswordCorrect) {
+                    throw new BizException(ResponseCodeEnum.PHONE_OR_PASSWORD_ERROR);
+                }
+
+                userId = userDO1.getId();
                 break;
             default:
                 break;
@@ -99,6 +125,29 @@ public class UserServiceImpl implements UserService {
         StpUtil.login(userId);
         SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
         return R.success(tokenInfo.getTokenValue());
+    }
+
+    @Override
+    public R logoutByUserId() {
+        StpUtil.logout(LoginUserContextHolder.getUserId());
+        return R.success("退出成功");
+    }
+
+    @Override
+    public R updatePassword(Map<String, String> updatePasswordReqVO) {
+        // 新密码
+        String newPassword = updatePasswordReqVO.get("newPassword");
+        // 密码加密
+        String encodePassword = passwordEncoder.encode(newPassword);
+
+        // 获取当前请求对应的用户 ID
+        Long userId = LoginUserContextHolder.getUserId();
+
+        // 更新密码
+        tuserService.lambdaUpdate().eq(TUser::getId, userId).set(TUser::getPassword, encodePassword).update();
+
+        return R.success("密码修改成功");
+
     }
 
 
@@ -136,10 +185,14 @@ public class UserServiceImpl implements UserService {
 
         tuserRoleRelService.save(userRoleDO);
 
-        // 将该用户的角色 ID 存入 Redis 中
-        List<Long> roles = Lists.newArrayList();
-        roles.add(RoleConstants.COMMON_USER_ROLE_ID);
-        String userRolesKey = RedisKeyConstants.buildUserRoleKey(qq);
+        //获取角色唯一标识
+        String roleKey = tRoleService.getById(RoleConstants.COMMON_USER_ROLE_ID).getRoleKey();
+
+        // 将该用户的角色唯一标识存入 Redis 中
+        List<String> roles = new ArrayList<>(1);
+        roles.add(roleKey);
+        String userRolesKey = RedisKeyConstants.buildUserRoleKey(Long.valueOf(qq));
+
         redisUtil.set(userRolesKey, JsonUtils.toJsonString(roles));
 
         return userId;

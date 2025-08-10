@@ -10,7 +10,7 @@ public class MQUtil {
 
     private final SendQQNumber sendQQNumber;
 
-    public void sendCode(String to,String title,String code) {
+    public void sendCode(String to, String title, String code) {
         sendQQNumber.sendCode(to, title, code);
     }
 }

@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 @ControllerAdvice
 @Slf4j
+@ResponseBody
 public class GlobalExceptionHandle {
 
     @ExceptionHandler(value = BizException.class)
-    @ResponseBody
     public R handleException(HttpServletRequest request,BizException e) {
         log.warn("{} request fail, errorCode: {}, errorMessage: {}", request.getRequestURI(), e.getCode(), e.getMessage());
         return R.fail(e);

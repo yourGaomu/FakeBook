@@ -7,7 +7,7 @@ import lombok.SneakyThrows;
 public class JsonUtils {
 
     // 由自动配置类注入，确保非空
-    private static ObjectMapper objectMapper;
+    public static ObjectMapper objectMapper;
 
     // 禁止外部实例化
     public JsonUtils() {

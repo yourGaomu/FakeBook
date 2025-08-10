@@ -23,7 +23,7 @@ public class VerificationCodeController {
 
     @PostMapping("/verification/code/send")
     @ApiOperationLog(description = "发送qq邮箱验证码")
-    public R send(@RequestBody Map<String,String> sendVerificationCodeReqVO) throws BizException {
+    public R send(@RequestBody Map<String, String> sendVerificationCodeReqVO) throws BizException {
         return verificationCodeService.send(sendVerificationCodeReqVO);
     }
 

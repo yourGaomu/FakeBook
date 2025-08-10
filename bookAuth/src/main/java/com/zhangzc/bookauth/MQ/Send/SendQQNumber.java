@@ -23,9 +23,9 @@ public class SendQQNumber {
             value = @Queue(name = "book.sendCode", declare = "true"),//不会持久化
             exchange = @Exchange(name = "book.send", type = ExchangeTypes.TOPIC, declare = "true")//topic的交换机,也不会持久化
     ))
-    public void sendCode(String to,String title,String code) {
+    public void sendCode(String to, String title, String code) {
         threadPoolTaskExecutor.execute(() -> {
-            rabbitMQService.sendCode(to,title,code);
+            rabbitMQService.sendCode(to, title, code);
         });
     }
 }

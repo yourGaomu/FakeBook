@@ -40,7 +40,7 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
      * @return
      */
     @Override
-    public R send(Map<String,String> sendVerificationCodeReqVO) throws BizException {
+    public R send(Map<String, String> sendVerificationCodeReqVO) throws BizException {
         // QQ号
         String phone = sendVerificationCodeReqVO.get("phone");
 
@@ -58,12 +58,12 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
         String verificationCode = RandomUtil.randomNumbers(6);
 
         // todo: 调用第三方短信发送服务
-        mqUtil.sendCode(phone,"验证码",verificationCode);
+        mqUtil.sendCode(phone, "验证码", verificationCode);
 
         log.info("==> 手机号: {}, 已发送验证码：【{}】", phone, verificationCode);
 
         // 存储验证码到 redis, 并设置过期时间为 3 分钟
-        redisTemplate.set(key,verificationCode,60*3);
+        redisTemplate.set(key, verificationCode, 60 * 3);
 
         return R.success();
     }

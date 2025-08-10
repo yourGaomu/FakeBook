@@ -9,7 +9,11 @@ import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.fakebookspringbootstartbizoperationlog.Aspect.AspectClass.ApiOperationLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.client.loadbalancer.Response;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * @author: zhangzc
@@ -35,6 +39,22 @@ public class UserController {
 
     @GetMapping("/test")
     public void test() {
-        mqUtil.sendCode("2823626561@qq.com","验证码","123456");
+        System.out.println("开始了");
+        mqUtil.sendCode("240064720", "验证码", "123456");
     }
+
+
+    @PostMapping("/logout")
+    @ApiOperationLog(description = "账号登出")
+    public R logout() {
+        return userService.logoutByUserId();
+    }
+
+
+    @PostMapping("/password/update")
+    @ApiOperationLog(description = "修改密码")
+    public R updatePassword(@RequestBody Map<String,String> updatePasswordReqVO) {
+        return userService.updatePassword(updatePasswordReqVO);
+    }
+
 }

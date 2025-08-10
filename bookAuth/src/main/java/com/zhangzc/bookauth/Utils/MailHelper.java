@@ -27,7 +27,6 @@ public class MailHelper {
     private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
 
-
     public void sendHtml(String to, String title, String html) {
         threadPoolTaskExecutor.execute(() -> {
             boolean b = senHtmlTask(to, title, html);
@@ -57,7 +56,7 @@ public class MailHelper {
             // 邮件发送来源
             mimeMessageHelper.setFrom(mailProperties.getUsername());
             // 邮件发送目标
-            mimeMessageHelper.setTo(to+"@qq.com");
+            mimeMessageHelper.setTo(to + "@qq.com");
             // 设置标题
             mimeMessageHelper.setSubject(title);
             // 设置内容，内容是否为 html 格式，值为 true
