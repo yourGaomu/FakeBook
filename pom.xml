@@ -16,7 +16,6 @@
         <module>bookAuth</module>
         <module>bookGateway</module>
         <module>bookFramework</module>
-        <module>bookFramework/book-common</module>
         <module>fakebookOss</module>
         <module>bookUser</module>
 

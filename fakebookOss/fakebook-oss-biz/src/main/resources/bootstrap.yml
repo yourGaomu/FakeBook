@@ -2,7 +2,6 @@ spring:
   application:
     name: fakebook-oss-biz  # 应用名称，需与Nacos配置文件名匹配
 
-
   cloud:
     nacos:
       discovery:

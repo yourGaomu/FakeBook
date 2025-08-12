@@ -17,7 +17,9 @@ spring:
         password: nacos
         file-extension: yaml
         extension-configs:
-          - data-id: 
+          - data-id: book_UserApi.yaml
+            group: mysql
+            refresh: true  # 支持动态刷新
           # 支持动态刷新
 
 

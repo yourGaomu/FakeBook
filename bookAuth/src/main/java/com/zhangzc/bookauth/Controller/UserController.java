@@ -22,7 +22,6 @@ import java.util.Map;
  * @description: TODO
  **/
 @RestController
-@RequestMapping("/user")
 @Slf4j
 @RequiredArgsConstructor
 public class UserController {
