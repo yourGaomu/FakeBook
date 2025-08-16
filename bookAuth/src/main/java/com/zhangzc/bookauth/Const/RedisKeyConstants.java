@@ -59,6 +59,4 @@ public class RedisKeyConstants {
     public static String buildVerificationCodeKey(String phone) {
         return VERIFICATION_CODE_KEY_PREFIX + phone;
     }
-
-
 }

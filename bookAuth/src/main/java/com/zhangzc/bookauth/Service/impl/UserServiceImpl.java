@@ -8,9 +8,11 @@ import com.zhangzc.bookauth.Enum.DeletedEnum;
 import com.zhangzc.bookauth.Enum.LoginTypeEnum;
 import com.zhangzc.bookauth.Enum.ResponseCodeEnum;
 import com.zhangzc.bookauth.Enum.StatusEnum;
+import com.zhangzc.bookauth.Pojo.Domain.TUser;
+import com.zhangzc.bookauth.Pojo.Domain.TUserRoleRel;
 import com.zhangzc.bookauth.Pojo.Vo.UserLoginReqVO;
-import com.zhangzc.bookauth.Pojo.domain.TUser;
-import com.zhangzc.bookauth.Pojo.domain.TUserRoleRel;
+
+import com.zhangzc.bookauth.Rpc.UserRpcService;
 import com.zhangzc.bookauth.Service.TRoleService;
 import com.zhangzc.bookauth.Service.TUserRoleRelService;
 import com.zhangzc.bookauth.Service.TUserService;
@@ -20,6 +22,7 @@ import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Exceptions.ExceptionEnum;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
+import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByPhoneRspDTO;
 import com.zhangzc.fakebookspringbootstartcontext.Const.LoginUserContextHolder;
 import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
 
@@ -46,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private final TRoleService tRoleService;
     private final RedisUtil redisUtil;
     private final PasswordEncoder passwordEncoder;
+    private final UserRpcService userRpcService;
 
 
     @Override
@@ -78,34 +82,28 @@ public class UserServiceImpl implements UserService {
                     throw new BizException(ExceptionEnum.VERIFICATION_CODE_ERROR);
                 }
 
-                // 通过手机号查询记录
-                TUser userDO = tuserService.lambdaQuery().eq(TUser::getPhone, phone).one();
+                // RPC: 调用用户服务，注册用户
+                Long userIdTmp = userRpcService.registerUser(phone);
 
-                log.info("==> 用户是否注册, phone: {}, userDO: {}", phone, JsonUtils.toJsonString(userDO));
-
-                // 判断是否注册
-                if (Objects.isNull(userDO)) {
-                    // 若此用户还没有注册，系统自动注册该用户
-                    userId = register(phone);
-
-                } else {
-                    // 已注册，则获取其用户 ID
-                    userId = userDO.getId();
+                // 若调用用户服务，返回的用户 ID 为空，则提示登录失败
+                if (Objects.isNull(userIdTmp)) {
+                    throw new BizException(ResponseCodeEnum.LOGIN_FAIL);
                 }
+                userId = userIdTmp;
                 break;
             case PASSWORD:
                 // 密码登录
                 String password = userLoginReqVO.getPassword();
-                // 根据手机号查询
-                TUser userDO1 = tuserService.lambdaQuery().eq(TUser::getPhone, phone).one();
+                // RPC: 调用用户服务，通过手机号查询用户
+                FindUserByPhoneRspDTO findUserByPhoneRspDTO = userRpcService.findUserByPhone(phone);
 
                 // 判断该手机号是否注册
-                if (Objects.isNull(userDO1)) {
+                if (Objects.isNull(findUserByPhoneRspDTO)) {
                     throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
                 }
 
                 // 拿到密文密码
-                String encodePassword = userDO1.getPassword();
+                String encodePassword = findUserByPhoneRspDTO.getPassword();
 
                 // 匹配密码是否一致
                 boolean isPasswordCorrect = passwordEncoder.matches(password, encodePassword);
@@ -115,7 +113,7 @@ public class UserServiceImpl implements UserService {
                     throw new BizException(ResponseCodeEnum.PHONE_OR_PASSWORD_ERROR);
                 }
 
-                userId = userDO1.getId();
+                userId = findUserByPhoneRspDTO.getId();
                 break;
             default:
                 break;
@@ -140,62 +138,9 @@ public class UserServiceImpl implements UserService {
         // 密码加密
         String encodePassword = passwordEncoder.encode(newPassword);
 
-        // 获取当前请求对应的用户 ID
-        Long userId = LoginUserContextHolder.getUserId();
-
-        // 更新密码
-        tuserService.lambdaUpdate().eq(TUser::getId, userId).set(TUser::getPassword, encodePassword).update();
+        userRpcService.updatePassword(encodePassword);
 
         return R.success("密码修改成功");
-
-    }
-
-
-    @Transactional(rollbackFor = Exception.class)
-    protected Long register(String qq) {
-        // 获取全局自增的小哈书 ID
-        Long fakebookId = Long.valueOf((String) redisUtil.get(RedisKeyConstants.FAKEBOOK_ID_GENERATOR_KEY));
-        //再去自增id
-        redisUtil.incr(RedisKeyConstants.FAKEBOOK_ID_GENERATOR_KEY, 1);
-
-        TUser userDO = TUser.builder()
-                .phone(qq)
-                .xiaohashuId(String.valueOf(fakebookId)) // 自动生成小红书号 ID
-                .nickname("假书" + fakebookId) // 自动生成昵称, 如：小红薯10000
-                .status(StatusEnum.ENABLE.getValue()) // 状态为启用
-                .createTime(TimeUtil.getDateTime(LocalDate.now()))
-                .updateTime(TimeUtil.getDateTime(LocalDate.now()))
-                .isDeleted(DeletedEnum.NO.getValue()) // 逻辑删除
-                .build();
-
-        // 添加入库
-        tuserService.save(userDO);
-
-        // 获取刚刚添加入库的用户 ID
-        Long userId = userDO.getId();
-
-        // 给该用户分配一个默认角色
-        TUserRoleRel userRoleDO = TUserRoleRel.builder()
-                .userId(userId)
-                .roleId(RoleConstants.COMMON_USER_ROLE_ID)
-                .createTime(TimeUtil.getDateTime(LocalDate.now()))
-                .updateTime(TimeUtil.getDateTime(LocalDate.now()))
-                .isDeleted(DeletedEnum.NO.getValue())
-                .build();
-
-        tuserRoleRelService.save(userRoleDO);
-
-        //获取角色唯一标识
-        String roleKey = tRoleService.getById(RoleConstants.COMMON_USER_ROLE_ID).getRoleKey();
-
-        // 将该用户的角色唯一标识存入 Redis 中
-        List<String> roles = new ArrayList<>(1);
-        roles.add(roleKey);
-        String userRolesKey = RedisKeyConstants.buildUserRoleKey(Long.valueOf(qq));
-
-        redisUtil.set(userRolesKey, JsonUtils.toJsonString(roles));
-
-        return userId;
     }
 }
 

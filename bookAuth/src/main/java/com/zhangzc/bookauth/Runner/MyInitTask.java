@@ -1,14 +1,14 @@
 package com.zhangzc.bookauth.Runner;
 
+
 import com.zhangzc.bookauth.Const.RedisKeyConstants;
-import com.zhangzc.bookauth.Pojo.domain.TPermission;
-import com.zhangzc.bookauth.Pojo.domain.TRole;
-import com.zhangzc.bookauth.Pojo.domain.TRolePermissionRel;
+import com.zhangzc.bookauth.Pojo.Domain.TPermission;
+import com.zhangzc.bookauth.Pojo.Domain.TRole;
+import com.zhangzc.bookauth.Pojo.Domain.TRolePermissionRel;
 import com.zhangzc.bookauth.Service.TPermissionService;
 import com.zhangzc.bookauth.Service.TRolePermissionRelService;
 import com.zhangzc.bookauth.Service.TRoleService;
 import com.zhangzc.bookauth.Utils.RedisUtil;
-import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

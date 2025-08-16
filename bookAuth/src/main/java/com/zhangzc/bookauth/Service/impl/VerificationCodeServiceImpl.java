@@ -4,7 +4,6 @@ package com.zhangzc.bookauth.Service.impl;
 import com.zhangzc.bookauth.Const.RedisKeyConstants;
 import com.zhangzc.bookauth.Service.VerificationCodeService;
 import com.zhangzc.bookauth.Utils.MQUtil;
-import com.zhangzc.bookauth.Utils.MailHelper;
 import com.zhangzc.bookauth.Utils.RedisUtil;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Exceptions.ExceptionEnum;
@@ -13,16 +12,10 @@ import cn.hutool.core.util.RandomUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 
 
 @Service

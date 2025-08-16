@@ -25,6 +25,3 @@ spring:
     config:
       import:
         - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?group=DEFAULT_GROUP&namespace=${spring.cloud.nacos.config.namespace}
-
-  server:
-    port: 8077

@@ -1,6 +1,5 @@
 server:
-  port: 8080
-
+  port: 8081  # port 前面是两个空格缩进，冒号后有空格
 spring:
   application:
     name: book-auth  # 应用名称，需与Nacos配置文件名匹配
@@ -29,6 +28,9 @@ spring:
             refresh: true
           - data-id: book_Mail.yaml
             group: mail
+            refresh: true
+          - data-id: book_Auth.yaml
+            group: mysql
             refresh: true
 
 

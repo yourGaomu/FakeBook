@@ -8,7 +8,8 @@ spring:
     default-encoding: utf-8
     protocol: smtps
     port: 465
-
+server:
+  port: 8081  # port 前面是两个空格缩进，冒号后有空格
 logging:
   level:
     org.springframework.cache: DEBUG

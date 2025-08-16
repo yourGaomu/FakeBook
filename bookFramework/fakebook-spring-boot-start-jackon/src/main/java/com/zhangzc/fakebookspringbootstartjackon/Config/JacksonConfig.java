@@ -29,7 +29,6 @@ import java.util.TimeZone;
 public class JacksonConfig {
 
     @Bean
-    @ConditionalOnMissingBean(ObjectMapper.class)
     public ObjectMapper objectMapper() {
         // 初始化一个 ObjectMapper 对象，用于自定义 Jackson 的行为
         ObjectMapper objectMapper = new ObjectMapper();

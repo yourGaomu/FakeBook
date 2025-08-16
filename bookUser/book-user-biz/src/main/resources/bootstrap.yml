@@ -20,6 +20,9 @@ spring:
           - data-id: book_UserApi.yaml
             group: mysql
             refresh: true  # 支持动态刷新
+          - data-id: book_Redis.yaml
+            group: redis
+            refresh: true
           # 支持动态刷新
 
 
@@ -27,6 +30,3 @@ spring:
     config:
       import:
         - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?group=DEFAULT_GROUP&namespace=${spring.cloud.nacos.config.namespace}
-
-  server:
-    port: 8866

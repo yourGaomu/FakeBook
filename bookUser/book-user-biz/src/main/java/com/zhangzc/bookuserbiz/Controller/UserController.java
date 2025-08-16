@@ -1,10 +1,12 @@
 package com.zhangzc.bookuserbiz.Controller;
 
 
+import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookuserbiz.Pojo.Vo.UpdateUserInfoReqVO;
 import com.zhangzc.bookuserbiz.Service.UserService;
 import com.zhangzc.fakebookossapi.Api.FileFeignApi;
+import com.zhangzc.fakebookspringbootstartbizoperationlog.Aspect.AspectClass.ApiOperationLog;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +14,11 @@ import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 
 @RestController
@@ -36,5 +41,25 @@ public class UserController {
         return userService.updateUserInfo(updateUserInfoReqVO);
     }
 
+
+    // ===================================== 对其他服务提供的接口 =====================================
+    @PostMapping("/register")
+    @ApiOperationLog(description = "用户注册")
+    public R register(@RequestBody Map<String,String> registerUserReqDTO) {
+        return userService.register(registerUserReqDTO);
+    }
+
+    @PostMapping("/find")
+    @ApiOperationLog(description = "根据手机号查询用户信息")
+    public R findByPhone(@RequestBody Map<String,String> findUserByPhoneReqDTO) throws BizException {
+        return userService.findByPhone(findUserByPhoneReqDTO);
+    }
+
+
+    @PostMapping("/password/update")
+    @ApiOperationLog(description = "密码更新")
+    public R updatePassword(@RequestBody Map<String,String> updateUserPasswordReqDTO) {
+        return userService.updatePassword(updateUserPasswordReqDTO);
+    }
 }
 
