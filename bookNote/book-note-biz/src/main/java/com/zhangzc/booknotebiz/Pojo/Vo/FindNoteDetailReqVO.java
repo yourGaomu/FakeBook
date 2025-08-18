@@ -1,19 +1,18 @@
-package com.zhangzc.bookkvapi.Pojo.Dto.Req;
-
+package com.zhangzc.booknotebiz.Pojo.Vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class DeleteNoteContentReqDTO {
+public class FindNoteDetailReqVO {
 
 
-    private String uuid;
+    private Long id;
 
 }
-

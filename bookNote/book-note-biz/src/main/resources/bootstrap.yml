@@ -19,6 +19,9 @@ spring:
           - data-id: book_NoteApi.yaml
             group: mysql
             refresh: true  # 支持动态刷新
+          - data-id: book_Redis.yaml
+            group: redis
+            refresh: true
 
 
   # 导入主配置文件（应用名.yaml）

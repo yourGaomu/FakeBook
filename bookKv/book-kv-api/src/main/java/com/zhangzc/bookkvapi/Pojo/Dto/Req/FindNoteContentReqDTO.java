@@ -12,6 +12,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class FindNoteContentReqDTO {
 
-    private String noteId;
-
+    private String uuid;
 }

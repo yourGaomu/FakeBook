@@ -13,4 +13,8 @@ public class TimeUtil {
         // 转换为 Date
         return Date.from(instant);
     }
+
+    public static LocalDateTime getLocalDateTime(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+    }
 }

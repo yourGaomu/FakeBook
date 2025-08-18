@@ -6,14 +6,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class AddNoteContentReqDTO {
 
-
-    private Long noteId;
+    private String uuid;
 
 
     private String content;

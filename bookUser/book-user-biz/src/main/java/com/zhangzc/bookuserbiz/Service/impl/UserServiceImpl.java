@@ -1,5 +1,6 @@
 package com.zhangzc.bookuserbiz.Service.impl;
 
+import cn.hutool.core.util.RandomUtil;
 import com.google.common.base.Preconditions;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
@@ -13,6 +14,8 @@ import com.zhangzc.bookuserbiz.Enum.SexEnum;
 import com.zhangzc.bookuserbiz.Enum.StatusEnum;
 import com.zhangzc.bookuserbiz.Pojo.Domain.TUser;
 import com.zhangzc.bookuserbiz.Pojo.Domain.TUserRoleRel;
+import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
+import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.UpdateUserInfoReqVO;
 import com.zhangzc.bookuserbiz.Service.TRoleService;
 import com.zhangzc.bookuserbiz.Service.TUserRoleRelService;
@@ -28,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +55,7 @@ public class UserServiceImpl implements UserService {
     private final RedisUtil redisUtil;
     private final TUserRoleRelService tuserRoleRelService;
     private final TRoleService tRoleService;
-
+    private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
 
     @Override
@@ -225,6 +231,50 @@ public class UserServiceImpl implements UserService {
         tuserService.lambdaUpdate().eq(TUser::getId, userId).set(TUser::getPassword, s).update();
 
         return R.success("密码修改成功");
+    }
+
+    @Override
+    @SneakyThrows(Exception.class)
+    public R<FindUserByIdRspDTO> findById(FindUserByIdReqDTO findUserByIdReqDTO) {
+        Long id = findUserByIdReqDTO.getId();
+
+        //从redis里面查询
+        String s = (String) redisUtil.get(RedisKeyConstants.buildUserInfoKey(id));
+
+        if (StringUtils.isNotBlank(s)) {
+            FindUserByIdRspDTO findUserByIdRspDTO = JsonUtils.parseObject(s, FindUserByIdRspDTO.class);
+            return R.success(findUserByIdRspDTO);
+        }
+
+        //如果没有从数据库里面查询
+        TUser byId = tuserService.getById(id);
+
+        if (Objects.isNull(byId)) {
+
+            //存入redis中，防止缓存穿透
+            redisUtil.set(RedisKeyConstants.buildUserInfoKey(id), JsonUtils.toJsonString(null));
+
+            throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
+        }
+
+        FindUserByIdRspDTO findUserByIdRspDTO = FindUserByIdRspDTO.builder()
+                .id(byId.getId())
+                .nickName(byId.getNickname())
+                .avatar(byId.getAvatar())
+                .build();
+
+        threadPoolTaskExecutor.submit(() -> {
+            try {
+                // 过期时间（保底1天 + 随机秒数，将缓存过期时间打散，防止同一时间大量缓存失效，导致数据库压力太大）
+                long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+                redisUtil.set(RedisKeyConstants.buildUserInfoKey(id), JsonUtils.toJsonString(findUserByIdRspDTO),expireSeconds);
+            } catch (Exception e) {
+                log.error("异步存储用户信息到Redis失败，userId:{}", id, e); // 记录异常日志
+            }
+        });
+
+
+        return R.success(findUserByIdRspDTO);
     }
 }
 

@@ -2,6 +2,8 @@ package com.zhangzc.bookuserapi.Api;
 
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookuserapi.Const.ApiConstants;
+import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
+import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,4 +24,8 @@ public interface UserFeignApi {
 
     @PostMapping(value = PREFIX + "/password/update")
     R updatePassword(@RequestBody Map<String,String> updateUserPasswordReqDTO);
+
+
+    @PostMapping("/findById")
+    R<FindUserByIdRspDTO> findById(@RequestBody FindUserByIdReqDTO findUserByIdReqDTO);
 }

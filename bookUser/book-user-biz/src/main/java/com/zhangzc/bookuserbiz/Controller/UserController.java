@@ -3,16 +3,14 @@ package com.zhangzc.bookuserbiz.Controller;
 
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
+import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
+import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.UpdateUserInfoReqVO;
 import com.zhangzc.bookuserbiz.Service.UserService;
-import com.zhangzc.fakebookossapi.Api.FileFeignApi;
 import com.zhangzc.fakebookspringbootstartbizoperationlog.Aspect.AspectClass.ApiOperationLog;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.http.MediaType;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,6 +58,12 @@ public class UserController {
     @ApiOperationLog(description = "密码更新")
     public R updatePassword(@RequestBody Map<String,String> updateUserPasswordReqDTO) {
         return userService.updatePassword(updateUserPasswordReqDTO);
+    }
+
+    @PostMapping("/findById")
+    @ApiOperationLog(description = "查询用户信息")
+    public R<FindUserByIdRspDTO> findById(@RequestBody FindUserByIdReqDTO findUserByIdReqDTO) {
+        return userService.findById(findUserByIdReqDTO);
     }
 }
 

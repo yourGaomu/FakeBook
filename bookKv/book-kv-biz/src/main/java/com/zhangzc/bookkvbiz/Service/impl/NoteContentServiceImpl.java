@@ -1,6 +1,5 @@
 package com.zhangzc.bookkvbiz.Service.impl;
 
-import cn.hutool.core.lang.UUID;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
@@ -17,6 +16,8 @@ import lombok.SneakyThrows;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class NoteContentServiceImpl implements NoteContentService {
@@ -26,13 +27,13 @@ public class NoteContentServiceImpl implements NoteContentService {
     public R addNoteContent(AddNoteContentReqDTO addNoteContentReqDTO) {
 
         // 笔记 ID
-        Long noteId = addNoteContentReqDTO.getNoteId();
+        String noteId = addNoteContentReqDTO.getUuid();
         // 笔记内容
         String content = addNoteContentReqDTO.getContent();
 
         // 构建数据库 DO 实体类
         TNoteContent nodeContent = TNoteContent.builder()
-                .id(String.valueOf(UUID.randomUUID())) // TODO: 暂时用 UUID, 目的是为了下一章讲解压测，不用动态传笔记 ID。后续改为笔记服务传过来的笔记 ID
+                .id(noteId) // UUID 作为主键
                 .content(content)
                 .build();
 
@@ -48,7 +49,7 @@ public class NoteContentServiceImpl implements NoteContentService {
     public R<FindNoteContentRspDTO> findNoteContent(FindNoteContentReqDTO findNoteContentReqDTO) {
         FindNoteContentRspDTO findNoteContentRspDTO = new FindNoteContentRspDTO();
 
-        String noteId = findNoteContentReqDTO.getNoteId();
+        String noteId = findNoteContentReqDTO.getUuid();
 
         TNoteContent tNoteContent = tNoteContentService.lambdaQuery().eq(TNoteContent::getId, noteId).list().get(0);
 
@@ -57,7 +58,7 @@ public class NoteContentServiceImpl implements NoteContentService {
         }
 
         findNoteContentRspDTO.setContent(tNoteContent.getContent());
-        findNoteContentRspDTO.setNoteId(java.util.UUID.fromString(tNoteContent.getId()));
+        findNoteContentRspDTO.setNoteId(UUID.fromString(tNoteContent.getId()));
 
         return R.success(findNoteContentRspDTO);
 
@@ -66,7 +67,7 @@ public class NoteContentServiceImpl implements NoteContentService {
     @Override
     @SneakyThrows
     public R deleteNoteContent(DeleteNoteContentReqDTO deleteNoteContentReqDTO) {
-        String noteId = deleteNoteContentReqDTO.getNoteId();
+        String noteId = deleteNoteContentReqDTO.getUuid();
         LambdaQueryWrapper<TNoteContent> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(TNoteContent::getId, noteId);
         boolean remove = tNoteContentService.remove(queryWrapper);

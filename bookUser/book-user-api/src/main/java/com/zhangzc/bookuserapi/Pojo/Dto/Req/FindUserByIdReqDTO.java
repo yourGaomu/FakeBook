@@ -1,4 +1,4 @@
-package com.zhangzc.bookkvapi.Pojo.Dto.Req;
+package com.zhangzc.bookuserapi.Pojo.Dto.Req;
 
 
 import lombok.AllArgsConstructor;
@@ -10,10 +10,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class DeleteNoteContentReqDTO {
+public class FindUserByIdReqDTO {
 
-
-    private String uuid;
+    /**
+     * 手机号
+     */
+    private Long id;
 
 }
 
