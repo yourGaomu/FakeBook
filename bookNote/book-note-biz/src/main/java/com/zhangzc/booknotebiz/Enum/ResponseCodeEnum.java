@@ -20,7 +20,9 @@ public enum ResponseCodeEnum implements ExceptionInterface {
     NOTE_PRIVATE("NOTE-20003", "作者已将该笔记设置为仅自己可见"),
     NOTE_CONTENT_NOT_FOUND("NOTE-20004", "笔记内容不存在"),
     REDIS_CACHE_FAILE("NOTE-20005", "缓存笔记失败"),
-    TOPIC_NOT_FOUND("NOTE-20006", "话题不存在")
+    TOPIC_NOT_FOUND("NOTE-20006", "话题不存在"),
+    NOTE_CANT_VISIBLE_ONLY_ME("NOTE-20006", "此笔记无法修改为仅自己可见"),
+    NOTE_CANT_OPERATE("NOTE-20007", "您无法操作该笔记"),
     ;
 
     // 异常码

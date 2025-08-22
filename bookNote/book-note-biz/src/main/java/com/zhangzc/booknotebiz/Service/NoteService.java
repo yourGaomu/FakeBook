@@ -2,10 +2,7 @@ package com.zhangzc.booknotebiz.Service;
 
 
 import com.zhangzc.bookcommon.Utils.R;
-import com.zhangzc.booknotebiz.Pojo.Vo.FindNoteDetailReqVO;
-import com.zhangzc.booknotebiz.Pojo.Vo.FindNoteDetailRspVO;
-import com.zhangzc.booknotebiz.Pojo.Vo.PublishNoteReqVO;
-import com.zhangzc.booknotebiz.Pojo.Vo.UpdateNoteReqVO;
+import com.zhangzc.booknotebiz.Pojo.Vo.*;
 
 public interface NoteService {
 
@@ -14,4 +11,10 @@ public interface NoteService {
     R<FindNoteDetailRspVO> findNoteDetail(FindNoteDetailReqVO findNoteDetailReqVO);
 
     R updateNote(UpdateNoteReqVO updateNoteReqVO);
+
+    R deleteNote(DeleteNoteReqVO deleteNoteReqVO);
+
+    R visibleOnlyMe(UpdateNoteVisibleOnlyMeReqVO updateNoteVisibleOnlyMeReqVO);
+
+    R topNote(TopNoteReqVO topNoteReqVO);
 }

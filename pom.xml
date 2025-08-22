@@ -21,6 +21,7 @@
         <module>bookKv</module>
         <module>bookDistributed</module>
         <module>bookNote</module>
+        <module>bookRelation</module>
     </modules>
 
     <properties>

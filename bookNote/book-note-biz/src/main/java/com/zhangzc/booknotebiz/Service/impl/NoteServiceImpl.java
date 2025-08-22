@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
+import com.zhangzc.booknotebiz.Const.MQConstants;
 import com.zhangzc.booknotebiz.Const.RedisKeyConstants;
 import com.zhangzc.booknotebiz.Enum.NoteStatusEnum;
 import com.zhangzc.booknotebiz.Enum.NoteTypeEnum;
@@ -16,10 +17,7 @@ import com.zhangzc.booknotebiz.Enum.ResponseCodeEnum;
 import com.zhangzc.booknotebiz.Pojo.Domain.TNote;
 import com.zhangzc.booknotebiz.Pojo.Domain.TNoteContent;
 import com.zhangzc.booknotebiz.Pojo.Domain.TTopic;
-import com.zhangzc.booknotebiz.Pojo.Vo.FindNoteDetailReqVO;
-import com.zhangzc.booknotebiz.Pojo.Vo.FindNoteDetailRspVO;
-import com.zhangzc.booknotebiz.Pojo.Vo.PublishNoteReqVO;
-import com.zhangzc.booknotebiz.Pojo.Vo.UpdateNoteReqVO;
+import com.zhangzc.booknotebiz.Pojo.Vo.*;
 import com.zhangzc.booknotebiz.Rpc.DistributedIdGeneratorRpcService;
 import com.zhangzc.booknotebiz.Rpc.KeyValueRpcService;
 import com.zhangzc.booknotebiz.Rpc.UserRpcService;
@@ -27,28 +25,28 @@ import com.zhangzc.booknotebiz.Service.NoteService;
 import com.zhangzc.booknotebiz.Service.TNoteContentService;
 import com.zhangzc.booknotebiz.Service.TNoteService;
 import com.zhangzc.booknotebiz.Service.TTopicService;
+import com.zhangzc.booknotebiz.Utils.RabbitMqUtil;
 import com.zhangzc.booknotebiz.Utils.RedisUtil;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.fakebookspringbootstartcontext.Const.LoginUserContextHolder;
-
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
+
 
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class NoteServiceImpl implements NoteService {
 
     private final DistributedIdGeneratorRpcService distributedIdGeneratorRpcService;
@@ -59,6 +57,30 @@ public class NoteServiceImpl implements NoteService {
     private final KeyValueRpcService keyValueRpcService;
     private final RedisUtil redisUtil;
     private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    private final RabbitMqUtil rabbitMqUtil;
+
+    // 手动编写构造函数，为线程池参数添加 @Qualifier
+    public NoteServiceImpl(
+            DistributedIdGeneratorRpcService distributedIdGeneratorRpcService,
+            UserRpcService userRpcService,
+            TTopicService tTopicService,
+            TNoteService tNoteService,
+            TNoteContentService tNoteContentService,
+            KeyValueRpcService keyValueRpcService,
+            RedisUtil redisUtil,
+            @Qualifier("taskExecutor") ThreadPoolTaskExecutor threadPoolTaskExecutor,
+            RabbitMqUtil rabbitMqUtil
+    ) {
+        this.distributedIdGeneratorRpcService = distributedIdGeneratorRpcService;
+        this.userRpcService = userRpcService;
+        this.tTopicService = tTopicService;
+        this.tNoteService = tNoteService;
+        this.tNoteContentService = tNoteContentService;
+        this.keyValueRpcService = keyValueRpcService;
+        this.redisUtil = redisUtil;
+        this.threadPoolTaskExecutor = threadPoolTaskExecutor;
+        this.rabbitMqUtil = rabbitMqUtil;
+    }
 
 
     /**
@@ -344,6 +366,17 @@ public class NoteServiceImpl implements NoteService {
                     tNoteContent.setId(null);
                 }
             }
+            //延时双删
+            threadPoolTaskExecutor.execute(() -> {
+                try {
+                    //获取key
+                    String key = RedisKeyConstants.buildNoteDetailKey(id);
+                    redisUtil.del(key);
+                } catch (Exception e) {
+                    log.error("异步删除笔记Redis缓存失败，noteId:{}", id, e); // 仅记录日志，不抛出
+                }
+            });
+
             //更新笔记的基本信息
             tNoteService.lambdaUpdate()
                     .eq(TNote::getId, id)
@@ -361,7 +394,8 @@ public class NoteServiceImpl implements NoteService {
                 try {
                     //获取key
                     String key = RedisKeyConstants.buildNoteDetailKey(id);
-                    redisUtil.del(key);
+                    //延时删除
+                    rabbitMqUtil.sendDelayMessage("delay.exchange", MQConstants.TOPIC_DELETE_NOTE_LOCAL_CACHE, key, 3L);
                 } catch (Exception e) {
                     log.error("异步删除笔记Redis缓存失败，noteId:{}", id, e); // 仅记录日志，不抛出
                 }
@@ -372,6 +406,97 @@ public class NoteServiceImpl implements NoteService {
         }
         return R.success();
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @SneakyThrows
+    public R deleteNote(DeleteNoteReqVO deleteNoteReqVO) {
+        // 笔记 ID
+        Long noteId = deleteNoteReqVO.getId();
+
+        // 逻辑删除
+        TNote noteDO = TNote.builder()
+                .id(noteId)
+                .status(NoteStatusEnum.DELETED.getCode())
+                .updateTime(TimeUtil.getDateTime(LocalDate.now()))
+                .build();
+
+        boolean b = tNoteService.updateById(noteDO);
+
+        // 若影响的行数为 0，则表示该笔记不存在
+        if (!b) {
+            throw new BizException(ResponseCodeEnum.NOTE_NOT_FOUND);
+        }
+
+        // 删除缓存
+        String noteDetailRedisKey = RedisKeyConstants.buildNoteDetailKey(noteId);
+        redisUtil.del(noteDetailRedisKey);
+
+        // 同步发送广播模式 MQ，将所有实例中的本地缓存都删除掉
+        rabbitMqUtil.sendDelayMessage("delay.exchange", MQConstants.TOPIC_DELETE_NOTE_LOCAL_CACHE, noteDetailRedisKey, 3L);
+        log.info("====> MQ：删除笔记本地缓存发送成功...");
+
+        return R.success();
+    }
+
+    @Override
+    @SneakyThrows
+    public R visibleOnlyMe(UpdateNoteVisibleOnlyMeReqVO updateNoteVisibleOnlyMeReqVO) {
+        // 获取笔记 ID
+        Long noteId = updateNoteVisibleOnlyMeReqVO.getId();
+
+        //获取当前操作用户id
+        Long userId = LoginUserContextHolder.getUserId();
+
+        //更新笔记可见性
+        boolean update = tNoteService.lambdaUpdate()
+                .eq(TNote::getId, noteId)
+                .eq(TNote::getCreatorId, userId)
+                .set(TNote::getVisible, NoteVisibleEnum.PRIVATE.getCode())
+                .set(TNote::getUpdateTime, TimeUtil.getDateTime(LocalDate.now()))
+                .update();
+
+        if (!update) {
+            throw new BizException(ResponseCodeEnum.NOTE_CANT_VISIBLE_ONLY_ME);
+        }
+
+        return R.success();
+    }
+
+    @Override
+    @SneakyThrows
+    @Transactional(rollbackFor = Exception.class)
+    public R topNote(TopNoteReqVO topNoteReqVO) {
+        // 笔记 ID
+        Long noteId = topNoteReqVO.getId();
+        // 是否置顶
+        Boolean isTop = topNoteReqVO.getIsTop();
+
+        // 当前登录用户 ID
+        Long currUserId = LoginUserContextHolder.getUserId();
+
+        boolean update = tNoteService.lambdaUpdate()
+                .eq(TNote::getId, noteId)
+                .eq(TNote::getCreatorId, currUserId)
+                .set(TNote::getIsTop, isTop)
+                .set(TNote::getUpdateTime, TimeUtil.getDateTime(LocalDate.now()))
+                .update();
+
+        if (!update) {
+            throw new BizException(ResponseCodeEnum.NOTE_CANT_OPERATE);
+        }
+
+        // 删除 Redis 缓存
+        String noteDetailRedisKey = RedisKeyConstants.buildNoteDetailKey(noteId);
+        redisUtil.del(noteDetailRedisKey);
+
+        // 同步发送广播模式 MQ，将所有实例中的本地缓存都删除掉
+        rabbitMqUtil.sendDelayMessage("delay.exchange", MQConstants.TOPIC_DELETE_NOTE_LOCAL_CACHE, noteDetailRedisKey, 3L);
+        log.info("====> MQ：删除笔记本地缓存发送成功...");
+
+        return R.success();
+    }
+
 
     /**
      * 校验笔记的可见性
@@ -387,6 +512,6 @@ public class NoteServiceImpl implements NoteService {
             throw new BizException(ResponseCodeEnum.NOTE_PRIVATE);
         }
     }
-
 }
+
 
