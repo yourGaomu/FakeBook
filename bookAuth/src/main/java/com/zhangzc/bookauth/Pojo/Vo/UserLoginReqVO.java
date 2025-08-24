@@ -20,7 +20,7 @@ public class UserLoginReqVO {
     /**
      * qq邮箱号
      */
-    private String phone;
+    private String email;
 
     /**
      * 验证码

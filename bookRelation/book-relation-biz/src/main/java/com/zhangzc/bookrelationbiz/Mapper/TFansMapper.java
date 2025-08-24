@@ -1,6 +1,6 @@
 package com.zhangzc.bookrelationbiz.Mapper;
 
-import com.zhangzc.bookrelationbiz.Domain.TFans;
+import com.zhangzc.bookrelationbiz.Pojo.Domain.TFans;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

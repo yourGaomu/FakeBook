@@ -9,6 +9,12 @@ package com.zhangzc.bookgateway.Constants;
 public class RedisKeyConstants {
 
 
+
+    /**
+     * Sa-Token 登录的 Token KEY 前缀
+     */
+    public static final String SA_TOKEN_TOKEN_KEY_PREFIX = "Authorization:login:token:";
+
     /**
      * 用户对应角色集合 KEY 前缀
      */

@@ -1,15 +1,15 @@
 package com.zhangzc.bookdistributedbiz.service;
 
-
 import com.alibaba.druid.pool.DruidDataSource;
-import com.zhangzc.bookdistributedbiz.Const.Constants;
-import com.zhangzc.bookdistributedbiz.Core.IDGen;
-import com.zhangzc.bookdistributedbiz.Core.common.PropertyFactory;
-import com.zhangzc.bookdistributedbiz.Core.common.Result;
-import com.zhangzc.bookdistributedbiz.Core.common.ZeroIDGen;
-import com.zhangzc.bookdistributedbiz.Core.segment.SegmentIDGenImpl;
-import com.zhangzc.bookdistributedbiz.Core.segment.dao.IDAllocDao;
-import com.zhangzc.bookdistributedbiz.Core.segment.dao.impl.IDAllocDaoImpl;
+
+import com.zhangzc.bookdistributedbiz.constant.Constants;
+import com.zhangzc.bookdistributedbiz.core.IDGen;
+import com.zhangzc.bookdistributedbiz.core.common.PropertyFactory;
+import com.zhangzc.bookdistributedbiz.core.common.Result;
+import com.zhangzc.bookdistributedbiz.core.common.ZeroIDGen;
+import com.zhangzc.bookdistributedbiz.core.segment.SegmentIDGenImpl;
+import com.zhangzc.bookdistributedbiz.core.segment.dao.IDAllocDao;
+import com.zhangzc.bookdistributedbiz.core.segment.dao.impl.IDAllocDaoImpl;
 import com.zhangzc.bookdistributedbiz.exception.InitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

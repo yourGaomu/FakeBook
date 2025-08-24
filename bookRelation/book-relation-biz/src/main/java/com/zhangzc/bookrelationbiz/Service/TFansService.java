@@ -1,6 +1,6 @@
 package com.zhangzc.bookrelationbiz.Service;
 
-import com.zhangzc.bookrelationbiz.Domain.TFans;
+import com.zhangzc.bookrelationbiz.Pojo.Domain.TFans;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

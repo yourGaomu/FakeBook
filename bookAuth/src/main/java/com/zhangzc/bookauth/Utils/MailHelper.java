@@ -1,5 +1,6 @@
 package com.zhangzc.bookauth.Utils;
 
+import com.zhangzc.bookauth.Pojo.Vo.MailVo;
 import jakarta.mail.internet.MimeMessage;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +37,8 @@ public class MailHelper {
         });
     }
 
-    public void sendCode(String to, String title, String code) {
-        boolean b = sendCodeTask(to, title, code);
+    public void sendCode(MailVo mailVo) {
+        boolean b = sendCodeTask(mailVo.getTo(), mailVo.getTitle(), mailVo.getContent());
         if (!b) {
             throw new RuntimeException("邮件发送失败");
         }
@@ -56,7 +57,7 @@ public class MailHelper {
             // 邮件发送来源
             mimeMessageHelper.setFrom(mailProperties.getUsername());
             // 邮件发送目标
-            mimeMessageHelper.setTo(to + "@qq.com");
+            mimeMessageHelper.setTo(to);
             // 设置标题
             mimeMessageHelper.setSubject(title);
             // 设置内容，内容是否为 html 格式，值为 true

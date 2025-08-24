@@ -13,12 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * @author: zhangzc
- * @date: 2025/5/29 15:32
- * @version: v1.0.0
- * @description: TODO
- **/
+
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -31,13 +26,6 @@ public class UserController {
     @ApiOperationLog(description = "用户登录/注册")
     public R loginAndRegister(@RequestBody UserLoginReqVO userLoginReqVO) throws BizException {
         return userService.loginAndRegister(userLoginReqVO);
-    }
-
-
-    @GetMapping("/test")
-    public void test() {
-        System.out.println("开始了");
-        mqUtil.sendCode("240064720", "验证码", "123456");
     }
 
 

@@ -2,7 +2,7 @@ package com.zhangzc.bookrelationbiz.Service.impl;
 
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zhangzc.bookrelationbiz.Domain.TFollowing;
+import com.zhangzc.bookrelationbiz.Pojo.Domain.TFollowing;
 import com.zhangzc.bookrelationbiz.Mapper.TFollowingMapper;
 import com.zhangzc.bookrelationbiz.Service.TFollowingService;
 import org.springframework.stereotype.Service;

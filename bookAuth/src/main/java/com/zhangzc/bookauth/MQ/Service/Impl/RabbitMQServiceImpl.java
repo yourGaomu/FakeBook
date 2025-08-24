@@ -1,6 +1,7 @@
 package com.zhangzc.bookauth.MQ.Service.Impl;
 
 import com.zhangzc.bookauth.MQ.Service.RabbitMQService;
+import com.zhangzc.bookauth.Pojo.Vo.MailVo;
 import com.zhangzc.bookauth.Utils.MailHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ public class RabbitMQServiceImpl implements RabbitMQService {
 
 
     @Override
-    public void sendCode(String to, String title, String code) {
-        mailHelper.sendCode(to, title, code);
+    public void sendCode(MailVo mailVo) {
+        mailHelper.sendCode(mailVo);
     }
 }

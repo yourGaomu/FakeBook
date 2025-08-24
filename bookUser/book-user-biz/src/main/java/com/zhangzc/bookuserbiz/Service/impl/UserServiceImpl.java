@@ -132,7 +132,7 @@ public class UserServiceImpl implements UserService {
         if (needUpdate) {
             // 更新用户信息
             userDO.setUpdateTime(TimeUtil.getDateTime(LocalDate.now()));
-            tuserService.lambdaUpdate().eq(TUser::getId, userDO.getId()).update();
+            tuserService.updateById(userDO);
         }
         return R.success();
     }
@@ -195,7 +195,7 @@ public class UserServiceImpl implements UserService {
         // 将该用户的角色唯一标识存入 Redis 中
         List<String> roles = new ArrayList<>(1);
         roles.add(roleKey);
-        String userRolesKey = RedisKeyConstants.buildUserRoleKey(Long.valueOf(phone));
+        String userRolesKey = RedisKeyConstants.buildUserRoleKey(Long.valueOf(userId));
 
         redisUtil.set(userRolesKey, JsonUtils.toJsonString(roles));
 

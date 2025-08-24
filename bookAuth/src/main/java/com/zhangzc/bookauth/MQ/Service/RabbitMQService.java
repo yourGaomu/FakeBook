@@ -1,6 +1,8 @@
 package com.zhangzc.bookauth.MQ.Service;
 
+import com.zhangzc.bookauth.Pojo.Vo.MailVo;
+
 public interface RabbitMQService {
 
-    public void sendCode(String to, String title, String code);
+   void sendCode(MailVo mailVo);
 }

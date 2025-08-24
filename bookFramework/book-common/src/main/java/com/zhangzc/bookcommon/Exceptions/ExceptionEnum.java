@@ -13,11 +13,11 @@ public enum ExceptionEnum implements ExceptionInterface {
 
 
     ;
-
-    private String meg;
     private String code;
+    private String meg;
 
-    ExceptionEnum(String msg, String code) {
+
+    ExceptionEnum(String code,String msg) {
         this.code = code;
         this.meg = msg;
     }

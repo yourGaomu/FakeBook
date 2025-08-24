@@ -43,11 +43,15 @@ public class StpInterfaceImpl implements StpInterface {
         }
         List<String> permissionList = new ArrayList<>();
         for (String role : roleList) {
-            Object o = redisUtil.get(RedisKeyConstants.buildRolePermissionsKey(role));
+            System.out.println(role);
+            //获取对应的角色权限key
+            String rolePermissionsKey = RedisKeyConstants.buildRolePermissionsKey(role);
+            Object o = redisUtil.get(rolePermissionsKey);
             if (o != null) {
                 log.info("## 获取用户权限列表, loginId: {}, role: {}, permission: {}", loginId, role, o);
-
-                permissionList.addAll((JsonUtils.parseObject(o.toString(), List.class)));
+                //解析权限集合
+                List<String> o1 = (List<String>) o;
+                permissionList.addAll(o1);
             }
         }
         if (!permissionList.isEmpty()) {
@@ -62,7 +66,9 @@ public class StpInterfaceImpl implements StpInterface {
         // 返回此 loginId 拥有的角色列表
         log.info("## 获取用户角色列表, loginId: {}", loginId);
         // 从 redis 获取角色列表
-        Object o = redisUtil.get(RedisKeyConstants.buildUserRoleKey(Long.valueOf(loginId.toString())));
+        String s = RedisKeyConstants.buildUserRoleKey(Long.valueOf(loginId.toString()));
+        System.out.println(s);
+        Object o = redisUtil.get(s);
         if (o != null) {
             return JsonUtils.parseObject(o.toString(), List.class);
         }

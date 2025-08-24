@@ -1,7 +1,8 @@
 package com.zhangzc.bookdistributedbiz.controller;
 
-import com.zhangzc.bookdistributedbiz.Core.common.Result;
-import com.zhangzc.bookdistributedbiz.Core.common.Status;
+
+import com.zhangzc.bookdistributedbiz.core.common.Result;
+import com.zhangzc.bookdistributedbiz.core.common.Status;
 import com.zhangzc.bookdistributedbiz.exception.LeafServerException;
 import com.zhangzc.bookdistributedbiz.exception.NoKeyException;
 import com.zhangzc.bookdistributedbiz.service.SegmentService;

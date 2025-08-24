@@ -35,10 +35,10 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
     @Override
     public R send(Map<String, String> sendVerificationCodeReqVO) throws BizException {
         // QQ号
-        String phone = sendVerificationCodeReqVO.get("phone");
+        String email = sendVerificationCodeReqVO.get("email");
 
         // 构建验证码 redis key
-        String key = RedisKeyConstants.buildVerificationCodeKey(phone);
+        String key = RedisKeyConstants.buildVerificationCodeKey(email);
 
         // 判断是否已发送验证码
         boolean isSent = redisTemplate.hasKey(key);
@@ -50,13 +50,13 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
         // 生成 6 位随机数字验证码
         String verificationCode = RandomUtil.randomNumbers(6);
 
-        // todo: 调用第三方短信发送服务
-        mqUtil.sendCode(phone, "验证码", verificationCode);
+        // 调用第三方短信发送服务
+        mqUtil.sendCode(email, "验证码", verificationCode);
 
-        log.info("==> 手机号: {}, 已发送验证码：【{}】", phone, verificationCode);
+        log.info("==> 邮箱号: {}, 已发送验证码：【{}】", email, verificationCode);
 
-        // 存储验证码到 redis, 并设置过期时间为 3 分钟
-        redisTemplate.set(key, verificationCode, 60 * 3);
+        // 存储验证码到 redis, 并设置过期时间为 30 分钟
+        redisTemplate.set(key, verificationCode, 60 * 3 * 10);
 
         return R.success();
     }

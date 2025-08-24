@@ -1,7 +1,7 @@
 package com.zhangzc.bookrelationbiz.Service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zhangzc.bookrelationbiz.Domain.TFans;
+import com.zhangzc.bookrelationbiz.Pojo.Domain.TFans;
 import com.zhangzc.bookrelationbiz.Service.TFansService;
 import com.zhangzc.bookrelationbiz.Mapper.TFansMapper;
 import org.springframework.stereotype.Service;

@@ -5,7 +5,6 @@ import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookuserapi.Api.UserFeignApi;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByPhoneRspDTO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -28,8 +27,9 @@ public class UserRpcService {
         if (!response.isSuccess()) {
             return null;
         }
-        Long data = (Long) response.getData();
-        return data;
+        Object data = response.getData();
+        Long userId = Long.valueOf(String.valueOf(data));
+        return userId;
     }
 
     public FindUserByPhoneRspDTO findUserByPhone(String phone) {
