@@ -2,6 +2,7 @@ package com.zhangzc.bookrelationbiz.Utils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Date;
 
 public class DateUtils {
 
@@ -14,5 +15,10 @@ public class DateUtils {
     public static long localDateTime2Timestamp(LocalDateTime localDateTime) {
         return localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
     }
+
+    public static long localDateTime2Timestamp(Date date) {
+        return date.toInstant().toEpochMilli();
+    }
+
 }
 

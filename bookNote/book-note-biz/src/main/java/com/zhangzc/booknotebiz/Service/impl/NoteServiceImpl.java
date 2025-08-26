@@ -219,6 +219,8 @@ public class NoteServiceImpl implements NoteService {
         if (Objects.isNull(noteDO)) {
             throw new BizException(ResponseCodeEnum.NOTE_NOT_FOUND);
         }
+
+
         // 可见性校验
         Integer visible = noteDO.getVisible();
         checkNoteVisible(visible, userId, noteDO.getCreatorId());
@@ -294,6 +296,8 @@ public class NoteServiceImpl implements NoteService {
     @SneakyThrows
     @Transactional(rollbackFor = Exception.class)
     public R updateNote(UpdateNoteReqVO updateNoteReqVO) {
+
+
         //获取笔记的类型
         Integer type = updateNoteReqVO.getType();
         //如果不是图文或者视频
@@ -324,6 +328,23 @@ public class NoteServiceImpl implements NoteService {
             default:
                 break;
         }
+
+
+        // 当前登录用户 ID
+        Long currUserId = LoginUserContextHolder.getUserId();
+        TNote selectNoteDO = tNoteService.getById(updateNoteReqVO.getId());
+
+        // 笔记不存在
+        if (Objects.isNull(selectNoteDO)) {
+            throw new BizException(ResponseCodeEnum.NOTE_NOT_FOUND);
+        }
+
+        // 判断权限：非笔记发布者不允许更新笔记
+        if (!Objects.equals(currUserId, selectNoteDO.getCreatorId())) {
+            throw new BizException(ResponseCodeEnum.NOTE_CANT_OPERATE);
+        }
+
+
         //获取笔记的话题
         Long topicId = updateNoteReqVO.getTopicId();
         String topicName = null;
@@ -341,10 +362,13 @@ public class NoteServiceImpl implements NoteService {
         String content = updateNoteReqVO.getContent();
         //获取笔记是否为空
         Boolean isContentEmpty = StringUtils.isBlank(content);
+
+        //查询笔记内容DO
+        TNoteContent tNoteContent = tNoteContentService.getById(id);
+
         //开始更新笔记
         try {
-            //查询笔记内容DO
-            TNoteContent tNoteContent = tNoteContentService.getById(id);
+
             //更新笔记内容
             if (Objects.equals(isContentEmpty, Boolean.FALSE)) {
                 //笔记不为空
@@ -414,6 +438,12 @@ public class NoteServiceImpl implements NoteService {
         // 笔记 ID
         Long noteId = deleteNoteReqVO.getId();
 
+        //判断是否是本人操作
+        TNote byId = tNoteService.getById(noteId);
+        if (!Objects.equals(byId.getCreatorId(), LoginUserContextHolder.getUserId())) {
+            throw new BizException(ResponseCodeEnum.NOTE_CANT_OPERATE);
+        }
+
         // 逻辑删除
         TNote noteDO = TNote.builder()
                 .id(noteId)
@@ -445,8 +475,16 @@ public class NoteServiceImpl implements NoteService {
         // 获取笔记 ID
         Long noteId = updateNoteVisibleOnlyMeReqVO.getId();
 
+
         //获取当前操作用户id
         Long userId = LoginUserContextHolder.getUserId();
+
+        //判断是否是本人操作
+        TNote byId = tNoteService.getById(noteId);
+        if (!Objects.equals(byId.getCreatorId(), userId)) {
+            throw new BizException(ResponseCodeEnum.NOTE_CANT_OPERATE);
+        }
+
 
         //更新笔记可见性
         boolean update = tNoteService.lambdaUpdate()

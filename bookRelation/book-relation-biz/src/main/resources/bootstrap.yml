@@ -22,7 +22,9 @@ spring:
           - data-id: book_Redis.yaml
             group: redis
             refresh: true
-
+          - data-id: book_RabbitMQ.yaml
+            group: amqp
+            refresh: true
   # 导入主配置文件（应用名.yaml）
   config:
     import:
