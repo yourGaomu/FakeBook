@@ -3,11 +3,14 @@ package com.zhangzc.bookuserapi.Api;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookuserapi.Const.ApiConstants;
 import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
+import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUsersByIdsReqDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
+import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.List;
 import java.util.Map;
 
 @FeignClient(name = ApiConstants.SERVICE_NAME)
@@ -28,4 +31,8 @@ public interface UserFeignApi {
 
     @PostMapping("/findById")
     R<FindUserByIdRspDTO> findById(@RequestBody FindUserByIdReqDTO findUserByIdReqDTO);
+
+
+    @PostMapping(value = PREFIX + "/findByIds")
+    R<List<FindUserByIdRspDTO>> findByIds(@RequestBody FindUsersByIdsReqDTO findUsersByIdsReqDTO);
 }

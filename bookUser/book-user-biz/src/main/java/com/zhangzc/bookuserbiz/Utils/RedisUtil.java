@@ -86,6 +86,11 @@ public class RedisUtil {
         return key == null ? null : redisTemplate.opsForValue().get(key);
     }
 
+    public Object get(List key){
+        return redisTemplate.opsForValue().multiGet(key);
+    }
+
+
     /**
      * 普通缓存放入
      *

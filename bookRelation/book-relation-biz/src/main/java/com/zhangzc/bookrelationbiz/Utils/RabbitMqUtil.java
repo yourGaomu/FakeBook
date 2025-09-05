@@ -39,11 +39,11 @@ public class RabbitMqUtil {
     /*
     * 发送消息
     * @param exchange 交换机
-    * @param queueName 队列名
+    * @param routekey 路由
     * @param message 消息
     * */
-    public void send(String exchange,String queueName, Object message) {
-        rabbitTemplate.convertAndSend(exchange, null, message);
+    public void send(String exchange,String routekey, Object message) {
+        rabbitTemplate.convertAndSend(exchange, routekey, message);
     }
 
     /*

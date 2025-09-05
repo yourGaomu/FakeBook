@@ -3,9 +3,11 @@ package com.zhangzc.bookuserbiz.Service;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
+import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUsersByIdsReqDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.UpdateUserInfoReqVO;
 
+import java.util.List;
 import java.util.Map;
 
 public interface UserService {
@@ -18,4 +20,6 @@ public interface UserService {
     R updatePassword(Map<String, String> updateUserPasswordReqDTO);
 
     R<FindUserByIdRspDTO> findById(FindUserByIdReqDTO findUserByIdReqDTO);
+
+    R<List<FindUserByIdRspDTO>> findByIds(FindUsersByIdsReqDTO findUsersByIdsReqDTO);
 }
