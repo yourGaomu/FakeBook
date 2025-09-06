@@ -43,10 +43,23 @@ public class PageResponse<T> extends R<List<T>> {
 
     /**
      * 获取总页数
+     *
      * @return
      */
     public static long getTotalPage(long totalCount, long pageSize) {
         return pageSize == 0 ? 0 : (totalCount + pageSize - 1) / pageSize;
     }
-
+    /**
+     * 计算分页查询的 offset
+     * @param pageNo
+     * @param pageSize
+     * @return
+     */
+    public static long getOffset(long pageNo, long pageSize) {
+        // 如果页码小于 1，默认返回第一页的 offset
+        if (pageNo < 1) {
+            pageNo = 1;
+        }
+        return (pageNo - 1) * pageSize;
+    }
 }

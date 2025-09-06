@@ -2,10 +2,7 @@ package com.zhangzc.bookrelationbiz.Controller;
 
 import com.zhangzc.bookcommon.Utils.PageResponse;
 import com.zhangzc.bookcommon.Utils.R;
-import com.zhangzc.bookrelationbiz.Pojo.Vo.FindFollowingListReqVO;
-import com.zhangzc.bookrelationbiz.Pojo.Vo.FindFollowingUserRspVO;
-import com.zhangzc.bookrelationbiz.Pojo.Vo.FollowUserReqVO;
-import com.zhangzc.bookrelationbiz.Pojo.Vo.UnfollowUserReqVO;
+import com.zhangzc.bookrelationbiz.Pojo.Vo.*;
 import com.zhangzc.fakebookspringbootstartbizoperationlog.Aspect.AspectClass.ApiOperationLog;
 
 import lombok.RequiredArgsConstructor;
@@ -39,14 +36,20 @@ public class RelationController {
 
     @PostMapping("/unfollow")
     @ApiOperationLog(description = "取关用户")
-    public R unfollow(@Validated @RequestBody UnfollowUserReqVO unfollowUserReqVO) {
+    public R unfollow(@RequestBody UnfollowUserReqVO unfollowUserReqVO) {
         return relationService.unfollow(unfollowUserReqVO);
     }
 
     @PostMapping("/following/list")
     @ApiOperationLog(description = "查询用户关注列表")
-    public PageResponse<FindFollowingUserRspVO> findFollowingList(@Validated @RequestBody FindFollowingListReqVO findFollowingListReqVO) {
+    public PageResponse<FindFollowingUserRspVO> findFollowingList(@RequestBody FindFollowingListReqVO findFollowingListReqVO) {
         return relationService.findFollowingList(findFollowingListReqVO);
+    }
+
+    @PostMapping("/fans/list")
+    @ApiOperationLog(description = "查询用户粉丝列表")
+    public PageResponse<FindFansUserRspVO> findFansList(@RequestBody FindFansListReqVO findFansListReqVO) {
+        return relationService.findFansList(findFansListReqVO);
     }
 
 }

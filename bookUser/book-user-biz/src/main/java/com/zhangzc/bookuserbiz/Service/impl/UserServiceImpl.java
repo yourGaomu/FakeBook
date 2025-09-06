@@ -365,7 +365,7 @@ public class UserServiceImpl implements UserService {
                             .build())
                     .collect(Collectors.toList());
 
-            // TODO: 异步线程将用户信息同步到 Redis 中
+            //异步线程将用户信息同步到 Redis 中
             threadPoolTaskExecutor.submit(() -> {
                 // DTO 集合转 Map
                 Map<Long, FindUserByIdRspDTO> map = finalFindUserByIdRspDTOS.stream()
