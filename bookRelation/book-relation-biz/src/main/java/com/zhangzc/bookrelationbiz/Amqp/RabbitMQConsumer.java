@@ -10,9 +10,11 @@ import com.zhangzc.bookrelationbiz.Enum.ResponseCodeEnum;
 import com.zhangzc.bookrelationbiz.Pojo.Domain.TFans;
 import com.zhangzc.bookrelationbiz.Pojo.Domain.TFollowing;
 import com.zhangzc.bookrelationbiz.Pojo.Dto.FollowUserMqDTO;
+import com.zhangzc.bookrelationbiz.Pojo.Vo.CountFollowUnfollowMqDTO;
 import com.zhangzc.bookrelationbiz.Service.TFansService;
 import com.zhangzc.bookrelationbiz.Service.TFollowingService;
 import com.zhangzc.bookrelationbiz.Utils.DateUtils;
+import com.zhangzc.bookrelationbiz.Utils.RabbitMqUtil;
 import com.zhangzc.bookrelationbiz.Utils.RedisUtil;
 import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
@@ -44,30 +46,40 @@ public class RabbitMQConsumer {
     private final TFansService tFansService;
     private final RateLimiter rateLimiter;
     private final RedisTemplate redisTemplate;
+    private final RabbitMqUtil rabbitMqUtil;
 
 
     //负载均衡
     @RabbitListener(queues = "relation.queue")
     @Transactional(rollbackFor = Exception.class)
-    public void consumeDelayMessageQueue2(String message) {
+    public void consumeMessageQueue2(String message) {
         try {
             FollowUserMqDTO followUserMqDTO = JsonUtils.parseObject(message, FollowUserMqDTO.class);
             String tag = followUserMqDTO.getTag();
+            CountFollowUnfollowMqDTO countFollowUnfollowMqDTO = new CountFollowUnfollowMqDTO();
             // 流量削峰：通过获取令牌，如果没有令牌可用，将阻塞，直到获得
             rateLimiter.acquire();
             switch (tag) {
                 case "Follow":
                     //处理关注的消息
                     handleFollowTagMessage(followUserMqDTO);
+                    countFollowUnfollowMqDTO.setType(1);
+                    countFollowUnfollowMqDTO.setUserId(followUserMqDTO.getUserId());
+                    countFollowUnfollowMqDTO.setTargetUserId(followUserMqDTO.getFollowUserId());
                     break;
                 case "Unfollow":
                     handleUnfollowTagMessage(followUserMqDTO);
+                    countFollowUnfollowMqDTO.setType(0);
+                    countFollowUnfollowMqDTO.setUserId(followUserMqDTO.getUserId());
+                    countFollowUnfollowMqDTO.setTargetUserId(followUserMqDTO.getFollowUserId());
                     break;
                 default:
                     throw new BizException(ResponseCodeEnum.PARAM_NOT_VALID);
             }
 
-
+            //发送计数服务来聚合减少操作io
+            rabbitMqUtil.send("count.exchange", MQConstants.TAG_COUNT,
+                    JsonUtils.toJsonString(countFollowUnfollowMqDTO));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -98,8 +110,6 @@ public class RabbitMQConsumer {
         String fansRedisKey = RedisKeyConstants.buildUserFansKey(unfollowUserId);
         // 删除指定粉丝
         redisTemplate.opsForZSet().remove(fansRedisKey, userId);
-        //todo 发送 MQ 通知计数服务：统计关注数
-
     }
 
 
@@ -162,7 +172,11 @@ public class RabbitMQConsumer {
                     key = MQConstants.TOPIC_FOLLOW_OR_UNFOLLOW  // 相同的路由键
             )
     })
-    public void consumeDelayMessage(String message) {
+    public void consumeRelationMessage(String message) {
     }
+
+
+
+
 
 }

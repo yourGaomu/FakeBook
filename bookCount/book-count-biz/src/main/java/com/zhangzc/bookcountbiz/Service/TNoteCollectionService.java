@@ -1,6 +1,6 @@
 package com.zhangzc.bookcountbiz.Service;
 
-import com.zhangzc.bookcountbiz.Domain.TNoteCollection;
+import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCollection;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

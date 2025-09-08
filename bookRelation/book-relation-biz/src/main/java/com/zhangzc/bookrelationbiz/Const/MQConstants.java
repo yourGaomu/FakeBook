@@ -18,4 +18,9 @@ public interface MQConstants {
      * 取关标签
      */
     String TAG_UNFOLLOW = "Unfollow";
+
+    /**
+    * 计数服务标签
+    * */
+    String TAG_COUNT = "Count";
 }

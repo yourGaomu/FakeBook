@@ -16,6 +16,7 @@
         <!-- 统一管理Spring Cloud Alibaba版本 -->
         <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
         <mysql-connector-java.version>8.0.29</mysql-connector-java.version>
+        <buffertrigger.version>0.2.21</buffertrigger.version>
         <druid.version>1.2.21</druid.version>
     </properties>
     <parent>
@@ -26,6 +27,14 @@
 
     <packaging>jar</packaging>
     <dependencies>
+
+        <!-- 快手 Buffer Trigger -->
+        <dependency>
+            <groupId>com.github.phantomthief</groupId>
+            <artifactId>buffer-trigger</artifactId>
+            <version>${buffertrigger.version}</version>
+        </dependency>
+
 
         <!--rabbit Mq-->
         <dependency>

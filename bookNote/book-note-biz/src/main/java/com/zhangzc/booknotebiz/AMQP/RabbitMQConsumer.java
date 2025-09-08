@@ -25,7 +25,6 @@ public class RabbitMQConsumer {
 
     @RabbitListener(queues = "delay.queue")
     public void consumeDelayMessageQueue(String message) {
-        System.out.println("接受到了消息2");
         threadPoolTaskExecutor.submit(() -> {
             try {
                 redisUtil.del(message);

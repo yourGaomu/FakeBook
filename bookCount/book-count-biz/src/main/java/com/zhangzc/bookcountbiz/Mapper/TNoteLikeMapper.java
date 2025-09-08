@@ -1,6 +1,6 @@
 package com.zhangzc.bookcountbiz.Mapper;
 
-import com.zhangzc.bookcountbiz.Domain.TNoteLike;
+import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteLike;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

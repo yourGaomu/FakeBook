@@ -1,7 +1,7 @@
 package com.zhangzc.bookcountbiz.Service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zhangzc.bookcountbiz.Domain.TNoteContent;
+import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteContent;
 import com.zhangzc.bookcountbiz.Service.TNoteContentService;
 import com.zhangzc.bookcountbiz.Mapper.TNoteContentMapper;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.zhangzc.bookcountbiz.Domain;
+package com.zhangzc.bookcountbiz.Pojo.Domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -9,12 +9,12 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 笔记收藏表
- * @TableName t_note_collection
+ * 笔记点赞表
+ * @TableName t_note_like
  */
-@TableName(value ="t_note_collection")
+@TableName(value ="t_note_like")
 @Data
-public class TNoteCollection implements Serializable {
+public class TNoteLike implements Serializable {
     /**
      * 主键ID
      */
@@ -40,7 +40,7 @@ public class TNoteCollection implements Serializable {
     private Date createTime;
 
     /**
-     * 收藏状态(0：取消收藏 1：收藏)
+     * 点赞状态(0：取消点赞 1：点赞)
      */
     @TableField(value = "status")
     private Integer status;
@@ -59,7 +59,7 @@ public class TNoteCollection implements Serializable {
         if (getClass() != that.getClass()) {
             return false;
         }
-        TNoteCollection other = (TNoteCollection) that;
+        TNoteLike other = (TNoteLike) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
             && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
             && (this.getNoteId() == null ? other.getNoteId() == null : this.getNoteId().equals(other.getNoteId()))
