@@ -17,4 +17,6 @@ public interface NoteService {
     R visibleOnlyMe(UpdateNoteVisibleOnlyMeReqVO updateNoteVisibleOnlyMeReqVO);
 
     R topNote(TopNoteReqVO topNoteReqVO);
+
+    R likeNote(LikeNoteReqVO likeNoteReqVO);
 }

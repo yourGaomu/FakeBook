@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhangzc.booknotebiz.Mapper.TNoteCountMapper">
+
+    <resultMap id="BaseResultMap" type="com.zhangzc.booknotebiz.Pojo.Domain.TNoteCount">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="noteId" column="note_id" jdbcType="BIGINT"/>
+            <result property="likeTotal" column="like_total" jdbcType="BIGINT"/>
+            <result property="collectTotal" column="collect_total" jdbcType="BIGINT"/>
+            <result property="commentTotal" column="comment_total" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,note_id,like_total,
+        collect_total,comment_total
+    </sql>
+</mapper>

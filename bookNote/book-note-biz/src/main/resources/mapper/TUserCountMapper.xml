@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhangzc.booknotebiz.Mapper.TUserCountMapper">
+
+    <resultMap id="BaseResultMap" type="com.zhangzc.booknotebiz.Pojo.Domain.TUserCount">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="userId" column="user_id" jdbcType="BIGINT"/>
+            <result property="fansTotal" column="fans_total" jdbcType="BIGINT"/>
+            <result property="followingTotal" column="following_total" jdbcType="BIGINT"/>
+            <result property="noteTotal" column="note_total" jdbcType="BIGINT"/>
+            <result property="likeTotal" column="like_total" jdbcType="BIGINT"/>
+            <result property="collectTotal" column="collect_total" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_id,fans_total,
+        following_total,note_total,like_total,
+        collect_total
+    </sql>
+</mapper>

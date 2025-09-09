@@ -59,4 +59,9 @@ public class NoteController {
         return noteService.topNote(topNoteReqVO);
     }
 
+    @PostMapping(value = "/like")
+    @ApiOperationLog(description = "点赞笔记")
+    public R likeNote(@RequestBody LikeNoteReqVO likeNoteReqVO) {
+        return noteService.likeNote(likeNoteReqVO);
+    }
 }

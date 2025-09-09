@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.zhangzc.bookcountbiz.Mapper.TNoteLikeMapper">
+<mapper namespace="com.zhangzc.booknotebiz.Mapper.TNoteLikeMapper">
 
-    <resultMap id="BaseResultMap" type="com.zhangzc.bookcountbiz.Pojo.Domain.TNoteLike">
+    <resultMap id="BaseResultMap" type="com.zhangzc.booknotebiz.Pojo.Domain.TNoteLike">
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="userId" column="user_id" jdbcType="BIGINT"/>
             <result property="noteId" column="note_id" jdbcType="BIGINT"/>
@@ -18,15 +18,13 @@
     </sql>
 
     <insert id="batchInsertOrUpdate">
-        INSERT INTO t_note_like (user_id, note_id, status, create_time, update_time)
+        INSERT INTO t_note_like (user_id, note_id, status, create_time)
         VALUES
         <foreach collection="list" item="item" separator=",">
-            (#{item.userId}, #{item.noteId}, #{item.status}, #{item.createTime}, #{item.updateTime})
+            (#{item.userId}, #{item.noteId}, #{item.status}, #{item.createTime})
         </foreach>
         ON DUPLICATE KEY UPDATE
         status = VALUES(status),
-        update_time = VALUES(update_time)
+        create_time = VALUES(create_time)
     </insert>
-
-
 </mapper>
