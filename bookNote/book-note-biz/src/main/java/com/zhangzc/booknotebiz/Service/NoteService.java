@@ -3,6 +3,7 @@ package com.zhangzc.booknotebiz.Service;
 
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.booknotebiz.Pojo.Vo.*;
+import org.springframework.cloud.client.loadbalancer.Response;
 
 public interface NoteService {
 
@@ -19,4 +20,6 @@ public interface NoteService {
     R topNote(TopNoteReqVO topNoteReqVO);
 
     R likeNote(LikeNoteReqVO likeNoteReqVO);
+
+    R unlikeNote(UnlikeNoteReqVO unlikeNoteReqVO);
 }

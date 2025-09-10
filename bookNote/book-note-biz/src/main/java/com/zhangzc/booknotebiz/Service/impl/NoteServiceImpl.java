@@ -666,6 +666,24 @@ public class NoteServiceImpl implements NoteService {
         return R.success();
     }
 
+    @Override
+    public R unlikeNote(UnlikeNoteReqVO unlikeNoteReqVO) {
+        //获取笔记ID
+        Long id = unlikeNoteReqVO.getId();
+        //当前用户ID
+        Long userId = LoginUserContextHolder.getUserId();
+
+        //判断是否存在笔记
+
+        //直接保存或修改数据
+
+        //更新Zset里面的数据
+
+        return R.success();
+
+
+    }
+
     private void InitUserNoteLikeZSet(String userNoteLikeZSetKey, Long userId, long expireSeconds) {
         //查询该用户的点赞情况,并且只查出最近点赞的一百条
         List<TNoteLike> list = tNoteLikeService.lambdaQuery()

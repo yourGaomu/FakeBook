@@ -64,4 +64,11 @@ public class NoteController {
     public R likeNote(@RequestBody LikeNoteReqVO likeNoteReqVO) {
         return noteService.likeNote(likeNoteReqVO);
     }
+
+
+    @PostMapping(value = "/unlike")
+    @ApiOperationLog(description = "取消点赞笔记")
+    public R unlikeNote(@RequestBody UnlikeNoteReqVO unlikeNoteReqVO) {
+        return noteService.unlikeNote(unlikeNoteReqVO);
+    }
 }
