@@ -13,4 +13,5 @@ import java.util.List;
 public interface TNoteLikeService extends IService<TNoteLike> {
     boolean batchUpsert(List<TNoteLike> list);
 
+    void saveOrUpdateTnoteLike(TNoteLike tNoteLike);
 }

@@ -71,4 +71,10 @@ public class NoteController {
     public R unlikeNote(@RequestBody UnlikeNoteReqVO unlikeNoteReqVO) {
         return noteService.unlikeNote(unlikeNoteReqVO);
     }
+
+    @PostMapping(value = "/collect")
+    @ApiOperationLog(description = "收藏笔记")
+    public R collectNote( @RequestBody CollectNoteReqVO collectNoteReqVO) {
+        return noteService.collectNote(collectNoteReqVO);
+    }
 }

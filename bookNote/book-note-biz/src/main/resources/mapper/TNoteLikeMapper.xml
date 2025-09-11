@@ -27,4 +27,13 @@
         status = VALUES(status),
         create_time = VALUES(create_time)
     </insert>
+
+    <insert id="saveOrUpdateTnoteLike">
+        INSERT INTO t_note_like (user_id, note_id, status, create_time)
+        VALUES
+        (#{userId}, #{noteId}, #{status}, #{createTime})
+        ON DUPLICATE KEY UPDATE
+        status = VALUES(status),
+        create_time = VALUES(create_time)
+    </insert>
 </mapper>

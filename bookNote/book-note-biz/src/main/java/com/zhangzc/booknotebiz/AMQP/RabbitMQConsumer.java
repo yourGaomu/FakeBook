@@ -40,9 +40,12 @@ public class RabbitMQConsumer {
     private void consumeLikeAndUnlikeMessage(List<String> strings) {
         log.info("开始处理点赞和取消点赞的消息一共{}", strings.size());
         threadPoolTaskExecutor.execute(() -> {
-            //转换对象
+            //点赞入库转换对象
             List<LikeUnlikeNoteMqDTO> list = strings.stream()
                     .map(s -> JsonUtils.parseObject(s, LikeUnlikeNoteMqDTO.class)).toList();
+            //点赞计数入库对象
+
+
             //按照点赞和取消点赞分开
             Map<Integer, List<LikeUnlikeNoteMqDTO>> collect = list.stream().collect(Collectors.groupingBy(LikeUnlikeNoteMqDTO::getType));
             List<LikeUnlikeNoteMqDTO> likeNoteMqDTOS = collect.get(1);//点赞

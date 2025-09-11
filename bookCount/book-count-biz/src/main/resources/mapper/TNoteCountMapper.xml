@@ -16,4 +16,25 @@
         id,note_id,like_total,
         collect_total,comment_total
     </sql>
+
+
+    <!-- 批量插入或更新：根据note_id，存在则累加like_total，不存在则插入 -->
+    <insert id="batchInsertOrUpdateLikeTotal" parameterType="java.util.List">
+        INSERT INTO t_note_count (note_id, like_total)
+        VALUES
+        <!-- 遍历集合，生成多条插入值 -->
+        <foreach collection="list" item="item" separator=",">
+            (#{item.noteId}, #{item.count})
+        </foreach>
+        <!-- 当note_id冲突时，累加like_total -->
+        ON DUPLICATE KEY UPDATE
+        like_total = like_total + VALUES(like_total)
+    </insert>
+
+    <insert id="incrementLikeTotal" parameterType="map">
+        INSERT INTO t_note_count (note_id, like_total)
+        VALUES (#{noteId}, #{count})
+            ON DUPLICATE KEY UPDATE like_total = like_total + (#{count});
+    </insert>
+
 </mapper>

@@ -12,5 +12,10 @@ public interface MQConstants {
      * 粉丝计数服务队列
     * */
     String TAG_COUNT_DB = "CountFansDB";
+
+    /**
+     * 笔记计数统计队列
+    * */
+    String TAG_COUNT_NOTE_DB = "CountNoteDB";
 }
 

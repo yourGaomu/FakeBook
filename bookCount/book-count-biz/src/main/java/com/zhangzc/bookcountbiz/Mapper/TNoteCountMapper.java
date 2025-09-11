@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @Entity com.zhangzc.bookcountbiz.Domain.TNoteCount
 */
 public interface TNoteCountMapper extends BaseMapper<TNoteCount> {
+    void incrementLikeTotal(Long noteId, int count);
 
 }
 

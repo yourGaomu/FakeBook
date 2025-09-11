@@ -22,4 +22,6 @@ public interface NoteService {
     R likeNote(LikeNoteReqVO likeNoteReqVO);
 
     R unlikeNote(UnlikeNoteReqVO unlikeNoteReqVO);
+
+    R collectNote(CollectNoteReqVO collectNoteReqVO);
 }

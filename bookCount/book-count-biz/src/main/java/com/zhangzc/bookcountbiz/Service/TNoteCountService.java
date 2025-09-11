@@ -9,5 +9,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2025-09-06 17:55:18
 */
 public interface TNoteCountService extends IService<TNoteCount> {
+    void incrementLikeTotal(Long noteId, int total);
 
 }

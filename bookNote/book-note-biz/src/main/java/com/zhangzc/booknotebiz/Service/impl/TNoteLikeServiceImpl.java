@@ -53,6 +53,11 @@ public class TNoteLikeServiceImpl extends ServiceImpl<TNoteLikeMapper, TNoteLike
         }
         return true;
     }
+
+    @Override
+    public void saveOrUpdateTnoteLike(TNoteLike tNoteLike) {
+        baseMapper.saveOrUpdateTnoteLike(tNoteLike);
+    }
 }
 
 

@@ -14,6 +14,8 @@ import java.util.List;
 public interface TNoteLikeMapper extends BaseMapper<TNoteLike> {
 
     void batchInsertOrUpdate(List<TNoteLike> list);
+
+    void saveOrUpdateTnoteLike(TNoteLike tNoteLike);
 }
 
 
