@@ -6,6 +6,6 @@ public interface ApiConstants {
     /**
      * 服务名称
      */
-    String SERVICE_NAME = "xiaohashu-kv";
+    String SERVICE_NAME = "book-kv-biz";
 }
 

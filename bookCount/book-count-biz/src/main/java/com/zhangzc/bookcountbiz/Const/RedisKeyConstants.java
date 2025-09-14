@@ -3,6 +3,10 @@ package com.zhangzc.bookcountbiz.Const;
 
 public class RedisKeyConstants {
 
+    /**
+     * Hash Field: 笔记收藏总数
+     */
+    public static final String FIELD_COLLECT_TOTAL = "collectTotal";
 
     /**
      * 笔记维度计数 Key 前缀

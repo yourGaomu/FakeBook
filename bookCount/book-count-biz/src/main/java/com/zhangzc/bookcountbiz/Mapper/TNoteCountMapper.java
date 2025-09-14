@@ -2,6 +2,7 @@ package com.zhangzc.bookcountbiz.Mapper;
 
 import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCount;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
 * @author 吃饭
@@ -10,7 +11,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @Entity com.zhangzc.bookcountbiz.Domain.TNoteCount
 */
 public interface TNoteCountMapper extends BaseMapper<TNoteCount> {
-    void incrementLikeTotal(Long noteId, int count);
+    void incrementLikeTotal(@Param("noteId") Long noteId, @Param("count") int count);
 
 }
 

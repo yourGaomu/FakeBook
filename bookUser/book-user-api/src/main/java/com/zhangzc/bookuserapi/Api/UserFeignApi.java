@@ -19,17 +19,17 @@ public interface UserFeignApi {
 
 
     @PostMapping(value = PREFIX + "/register")
-    R registerUser(@RequestBody Map<String,String> registerUserReqDTO);
+    R registerUser(@RequestBody Map<String, String> registerUserReqDTO);
 
 
     @PostMapping(value = PREFIX + "/findByPhone")
-    R findByPhone(@RequestBody Map<String,String> findUserByPhoneReqDTO);
+    R findByPhone(@RequestBody Map<String, String> findUserByPhoneReqDTO);
 
     @PostMapping(value = PREFIX + "/password/update")
-    R updatePassword(@RequestBody Map<String,String> updateUserPasswordReqDTO);
+    R updatePassword(@RequestBody Map<String, String> updateUserPasswordReqDTO);
 
 
-    @PostMapping("/findById")
+    @PostMapping(value = PREFIX + "/findById")
     R<FindUserByIdRspDTO> findById(@RequestBody FindUserByIdReqDTO findUserByIdReqDTO);
 
 

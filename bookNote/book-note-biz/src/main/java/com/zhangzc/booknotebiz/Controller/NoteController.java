@@ -14,17 +14,30 @@ import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/note")
 @Slf4j
 @RequiredArgsConstructor
 public class NoteController {
-    private final RabbitMqUtil rabbitMqUtil;
     private final NoteService noteService;
+
+    @PostMapping("/topic/list")
+    @ApiOperationLog(description = "查询话题列表")
+    public R<List<FindTopicListRspVO>> findTopicList() {
+        return noteService.findTopicList();
+    }
+
+    @PostMapping("/channel/list")
+    @ApiOperationLog(description = "查询频道列表")
+    public R<List<FindChannelListRspVO>> findChannelList() {
+        return noteService.findChannelList();
+    }
 
     @PostMapping(value = "/publish")
     @ApiOperationLog(description = "笔记发布")
-    public R publishNote( @RequestBody PublishNoteReqVO publishNoteReqVO) {
+    public R publishNote(@RequestBody PublishNoteReqVO publishNoteReqVO) {
         return noteService.publishNote(publishNoteReqVO);
     }
 
@@ -36,10 +49,9 @@ public class NoteController {
 
     @PostMapping(value = "/update")
     @ApiOperationLog(description = "笔记修改")
-    public R updateNote( @RequestBody UpdateNoteReqVO updateNoteReqVO) {
+    public R updateNote(@RequestBody UpdateNoteReqVO updateNoteReqVO) {
         return noteService.updateNote(updateNoteReqVO);
     }
-
 
     @PostMapping(value = "/delete")
     @ApiOperationLog(description = "删除笔记")
@@ -74,7 +86,13 @@ public class NoteController {
 
     @PostMapping(value = "/collect")
     @ApiOperationLog(description = "收藏笔记")
-    public R collectNote( @RequestBody CollectNoteReqVO collectNoteReqVO) {
+    public R collectNote(@RequestBody CollectNoteReqVO collectNoteReqVO) {
         return noteService.collectNote(collectNoteReqVO);
+    }
+
+    @PostMapping(value = "/uncollect")
+    @ApiOperationLog(description = "取消收藏笔记")
+    public R unCollectNote(@RequestBody UnCollectNoteReqVO unCollectNoteReqVO) {
+        return noteService.unCollectNote(unCollectNoteReqVO);
     }
 }

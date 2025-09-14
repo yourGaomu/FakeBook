@@ -1,5 +1,6 @@
 package com.zhangzc.fakebookspringbootstartjackon.Utils;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.SneakyThrows;
@@ -20,6 +21,14 @@ public class JsonUtils {
      public static void setObjectMapper(ObjectMapper mapper) {
         objectMapper = mapper;
     }
+
+    // 重载方法，处理泛型类型
+    @SneakyThrows
+    public static <T> T parseObject(String json, TypeReference<T> typeReference) {
+        checkInit();
+        return objectMapper.readValue(json, typeReference);
+    }
+
 
     /**
      * 对象序列化为 JSON 字符串
@@ -45,4 +54,11 @@ public class JsonUtils {
             throw new IllegalStateException("JsonUtils 未初始化，请检查是否引入了正确的 Starter");
         }
     }
+
+    @SneakyThrows
+    public static <T> T parseList(String json, TypeReference<T> typeReference) {
+        checkInit();
+        return objectMapper.readValue(json, typeReference);
+    }
 }
+

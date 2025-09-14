@@ -55,8 +55,8 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
 
         log.info("==> 邮箱号: {}, 已发送验证码：【{}】", email, verificationCode);
 
-        // 存储验证码到 redis, 并设置过期时间为 30 分钟
-        redisTemplate.set(key, verificationCode, 60 * 3 * 10);
+        // 存储验证码到 redis, 并设置过期时间为 2个小时
+        redisTemplate.set(key, verificationCode, 60 * 60 * 2);
 
         return R.success();
     }

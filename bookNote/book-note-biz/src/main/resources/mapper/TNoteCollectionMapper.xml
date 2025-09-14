@@ -16,4 +16,19 @@
         id,user_id,note_id,
         create_time,status
     </sql>
+
+    <!-- 批量插入或更新笔记收藏记录 -->
+    <insert id="saveOrUpdateTnoteCollection" parameterType="java.util.List">
+        INSERT INTO t_note_collection (user_id, note_id, create_time, status)
+        VALUES
+        <!-- 遍历集合中的每条数据，拼接为批量插入的VALUES子句 -->
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.noteId}, #{item.createTime}, #{item.status})
+        </foreach>
+        <!-- 当违反唯一约束时，批量更新指定字段 -->
+        ON DUPLICATE KEY UPDATE
+        create_time = VALUES(create_time),  <!-- 使用当前插入的create_time更新 -->
+        status = VALUES(status);            <!-- 使用当前插入的status更新 -->
+    </insert>
+
 </mapper>

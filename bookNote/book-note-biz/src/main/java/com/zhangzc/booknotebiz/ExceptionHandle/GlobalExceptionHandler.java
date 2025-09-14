@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public R handleOtherException(HttpServletRequest request, Exception e) {
         log.error("{} request error, ", request.getRequestURI(), e);
-        return R.fail(ResponseCodeEnum.SYSTEM_ERROR);
+        return R.fail(e.getMessage());
     }
 }
 

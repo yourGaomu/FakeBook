@@ -54,7 +54,6 @@ public class CountConsumer {
         HandleFansCountMessage(groupMap);
         //进行关注量的改变
         HandleFollowingCountMessage(followingCountMap);
-
     }
 
     private void HandleFollowingCountMessage(Map<Long, Integer> followingCountMap) {

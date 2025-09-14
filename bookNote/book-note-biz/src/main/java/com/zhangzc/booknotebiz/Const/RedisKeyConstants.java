@@ -56,7 +56,15 @@ public class RedisKeyConstants {
      */
     public static final String USER_NOTE_LIKE_ZSET_KEY = "user:note:likes:";
 
+    /**
+    *  采用Zhash存储频道列表
+    * */
+    public static final String CHANNEL_LIST_KEY = "channel:list";
 
+    /**
+     * 采用Zhash存储话题/频道列表
+    * */
+    public static final String CHANNEL_AND_TOPIC_LIST_KEY = "channelAndTopic:list";
 
     /**
      * 构建完整的用户笔记点赞列表 ZSet KEY
@@ -86,5 +94,19 @@ public class RedisKeyConstants {
         return NOTE_DETAIL_KEY + noteId;
     }
 
+
+    /**
+    * 搭建频道列表
+    * */
+    public static String buildChannelListKey() {
+        return CHANNEL_LIST_KEY;
+    }
+
+    /**
+    * 搭建话题/频道列表
+    * */
+    public static String buildChannelAndTopicListKey() {
+        return CHANNEL_AND_TOPIC_LIST_KEY;
+    }
 }
 

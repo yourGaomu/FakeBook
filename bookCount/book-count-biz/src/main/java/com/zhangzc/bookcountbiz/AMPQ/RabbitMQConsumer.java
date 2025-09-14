@@ -2,16 +2,24 @@ package com.zhangzc.bookcountbiz.AMPQ;
 
 
 import com.alibaba.nacos.shaded.com.google.gson.Gson;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.phantomthief.collection.BufferTrigger;
 import com.google.common.reflect.TypeToken;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcountbiz.AMPQ.BufferConsumer.CountConsumer;
 import com.zhangzc.bookcountbiz.AMPQ.BufferConsumer.CountNoteConsumer;
 import com.zhangzc.bookcountbiz.Const.MQConstants;
+import com.zhangzc.bookcountbiz.Const.RedisKeyConstants;
 import com.zhangzc.bookcountbiz.Enum.ResponseCodeEnum;
+import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCollection;
+import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCount;
 import com.zhangzc.bookcountbiz.Pojo.Domain.TUserCount;
+import com.zhangzc.bookcountbiz.Pojo.Dto.CollectUnCollectNoteMqDTO;
 import com.zhangzc.bookcountbiz.Pojo.Dto.CountLikeUnlikeNoteMqDTO;
 import com.zhangzc.bookcountbiz.Pojo.Vo.CountFollowUnfollowMqDTO;
+import com.zhangzc.bookcountbiz.Service.TNoteContentService;
+import com.zhangzc.bookcountbiz.Service.TNoteCountService;
 import com.zhangzc.bookcountbiz.Service.TUserCountService;
 import com.zhangzc.bookcountbiz.Utills.RabbitMqUtil;
 import com.zhangzc.bookcountbiz.Utills.RedisUtil;
@@ -25,21 +33,21 @@ import com.google.common.util.concurrent.RateLimiter;
 
 import org.springframework.amqp.rabbit.annotation.*;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class RabbitMQConsumer {
-
-    // 每秒创建 5000 个令牌
-    private RateLimiter rateLimiter = RateLimiter.create(5000);
 
 
     @PostConstruct
@@ -59,6 +67,8 @@ public class RabbitMQConsumer {
                 .build();
     }
 
+    // 每秒创建 5000 个令牌
+    private RateLimiter rateLimiter = RateLimiter.create(5000);
     private BufferTrigger<String> bufferTrigger;
     private BufferTrigger<String> bufferTrigger2;
     @Qualifier("taskExecutor")
@@ -68,12 +78,52 @@ public class RabbitMQConsumer {
     private final CountConsumer countConsumer;
     private final CountNoteConsumer countNoteConsumer;
     private final TUserCountService tUserCountService;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final TNoteCountService tNoteCountService;
 
+
+    @RabbitListener(queues = "count.collectionDBqueue")
+    public void consumeCollectionMessage(String message) {
+        try {
+            //开始序列化
+            List<CollectUnCollectNoteMqDTO> tNoteCollections = JsonUtils.parseList(message, new TypeReference<List<CollectUnCollectNoteMqDTO>>() {
+            });// 泛型类型引用)
+            //开始计数
+            //先按照笔记id分组
+            Map<Long, List<CollectUnCollectNoteMqDTO>> collect = tNoteCollections.stream().collect(Collectors.groupingBy(CollectUnCollectNoteMqDTO::getNoteId));
+            collect.forEach((k, v) -> {
+                //开始计数
+                int count = v.stream().filter(sign -> sign.getType() == 1).collect(Collectors.toList()).size();
+                int uncount = v.stream().filter(sign -> sign.getType() == 0).collect(Collectors.toList()).size();
+                int total = count - uncount;
+                //开始入库
+                //先加载进入zset
+                String redisKey = RedisKeyConstants.buildCountNoteKey(k);
+                // 判断 Redis 中 Hash 是否存在
+                boolean isExisted = redisUtil.hasKey(redisKey);
+                if (isExisted) {
+                    // 对目标用户 Hash 中的收藏总数字段进行计数操作
+                    redisTemplate.opsForHash().increment(redisKey, RedisKeyConstants.FIELD_COLLECT_TOTAL, total);
+                }
+
+                tNoteCountService.lambdaUpdate()
+                        .eq(TNoteCount::getNoteId, k)
+                        .setIncrBy(TNoteCount::getCollectTotal, total).update();
+            });
+
+        } catch (Exception e) {
+            log.error("==> 转换计数数据失败，message:{}", message, e);
+        }
+    }
 
     @RabbitListener(queues = "count.NoteDBqueue")
     @Transactional(rollbackFor = Exception.class)
     public void consumeCountMessageToNoteDB(String message) {
         try {
+            log.info("开始处理消息");
+            if (message == null){
+                log.info("消息为空不会处理");
+            }
             bufferTrigger2.enqueue(message);
         } catch (Exception e) {
             log.error("==> 转换计数数据失败，message:{}", message, e);
@@ -141,6 +191,17 @@ public class RabbitMQConsumer {
     })
     public void consumeCountMessage(String message) {
     }
+
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "count.collectionDBqueue", declare = "true"),
+            exchange = @Exchange(name = "collection.exchange", type = ExchangeTypes.TOPIC, declare = "true"
+            )
+            , key = MQConstants.TAG_COUNT_COLLECT_UNCOLLECT
+    ))
+    public void consumeCountMessage4(String message) {
+    }
+
 
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(name = "count.NoteDBqueue", declare = "true"),
