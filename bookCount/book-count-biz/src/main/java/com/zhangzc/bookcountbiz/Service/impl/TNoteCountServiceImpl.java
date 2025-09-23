@@ -7,6 +7,8 @@ import com.zhangzc.bookcountbiz.Service.TNoteCountService;
 import com.zhangzc.bookcountbiz.Mapper.TNoteCountMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
 * @author 吃饭
 * @description 针对表【t_note_count(笔记计数表)】的数据库操作Service实现
@@ -75,6 +77,7 @@ public class TNoteCountServiceImpl extends ServiceImpl<TNoteCountMapper, TNoteCo
     public void incrementLikeTotal(Long noteId, int total) {
         this.baseMapper.incrementLikeTotal(noteId,total);
     }
+
 }
 
 

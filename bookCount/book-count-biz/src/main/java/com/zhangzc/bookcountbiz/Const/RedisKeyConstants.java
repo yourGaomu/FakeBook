@@ -9,6 +9,16 @@ public class RedisKeyConstants {
     public static final String FIELD_COLLECT_TOTAL = "collectTotal";
 
     /**
+     * Hash Field: 发布笔记总数
+    * */
+    public static final String FIELD_NOTE_TOTAL = "noteTotal";
+
+    /**
+     * Hash Field: 评论总数
+     */
+    public static final String FIELD_COMMENT_TOTAL = "commentTotal";
+
+    /**
      * 笔记维度计数 Key 前缀
      */
     private static final String COUNT_NOTE_KEY_PREFIX = "count:note:";
@@ -28,8 +38,6 @@ public class RedisKeyConstants {
         return COUNT_NOTE_KEY_PREFIX + noteId;
     }
 
-
-
     /**
      * 用户维度计数 Key 前缀
      */
@@ -40,13 +48,10 @@ public class RedisKeyConstants {
      */
     public static final String FIELD_FANS_TOTAL = "fansTotal";
 
-
     /**
      * Hash Field: 关注总数
     * */
     public static final String FIELD_FOLLOWING_TOTAL = "followingTotal";
-
-
 
     /**
      * 构建用户维度计数 Key
@@ -56,6 +61,7 @@ public class RedisKeyConstants {
     public static String buildCountUserKey(Long userId) {
         return COUNT_USER_KEY_PREFIX + userId;
     }
+
 
 
 }

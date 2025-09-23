@@ -28,6 +28,25 @@
     <packaging>jar</packaging>
     <dependencies>
 
+        <dependency>
+            <groupId>com.zhangzc</groupId>
+            <artifactId>book-user-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zhangzc</groupId>
+            <artifactId>book-count-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zhangzc</groupId>
+            <artifactId>book-note-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+
         <!-- 快手 Buffer Trigger -->
         <dependency>
             <groupId>com.github.phantomthief</groupId>

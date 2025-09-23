@@ -3,6 +3,22 @@ package com.zhangzc.bookuserbiz.Const;
 
 public class RedisKeyConstants {
 
+    /**
+     * 用户主页信息数据 KEY 前缀
+     */
+    private static final String USER_PROFILE_KEY_PREFIX = "user:profile:";
+
+    // 省略...
+
+    /**
+     * 构建角色主页信息对应的 KEY
+     * @param userId
+     * @return
+     */
+    public static String buildUserProfileKey(Long userId) {
+        return USER_PROFILE_KEY_PREFIX + userId;
+    }
+
 
     /**
      * 用户信息数据 KEY 前缀

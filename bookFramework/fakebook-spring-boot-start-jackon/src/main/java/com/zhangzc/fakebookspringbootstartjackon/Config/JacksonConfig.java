@@ -1,12 +1,10 @@
 package com.zhangzc.fakebookspringbootstartjackon.Config;
 
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.YearMonthDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
@@ -16,11 +14,11 @@ import com.fasterxml.jackson.datatype.jsr310.ser.YearMonthSerializer;
 import com.zhangzc.fakebookspringbootstartjackon.Const.DateConstants;
 import com.zhangzc.fakebookspringbootstartjackon.Utils.CustomLocalDateTimeDeserializer;
 import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
-import com.zhangzc.fakebookspringbootstartjackon.Utils.StringToListDeserializer;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import com.zhangzc.fakebookspringbootstartjackon.Utils.FlexibleListDeserializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -73,11 +71,28 @@ public class JacksonConfig {
         javaTimeModule.addDeserializer(YearMonth.class,
                 new YearMonthDeserializer(DateConstants.DATE_FORMAT_Y_M));
 
-        // 支持 List<String> 反序列化（单个字符串转列表）
-        javaTimeModule.addDeserializer(List.class, new StringToListDeserializer());
+        // 全局 List 反序列化（上下文感知）：
+        // - List<String>: 接受字符串/字符串数组
+        // - List<Long>: 接受数字/数字数组/字符串数字
+        javaTimeModule.addDeserializer(List.class, new FlexibleListDeserializer());
 
         // 注册模块
         objectMapper.registerModule(javaTimeModule);
+
+
+        SimpleModule keyConvertModule = new SimpleModule();
+        keyConvertModule.addKeyDeserializer(Long.class, new KeyDeserializer() {
+            @Override
+            public Long deserializeKey(String key, DeserializationContext ctxt) throws IOException {
+                try {
+                    return key == null ? null : Long.parseLong(key);
+                } catch (NumberFormatException e) {
+                    throw new IOException("字符串转 Long 失败: " + key, e);
+                }
+            }
+        });
+        objectMapper.registerModule(keyConvertModule);
+
 
         return objectMapper;
     }

@@ -1,0 +1,16 @@
+package com.zhangzc.booknotebiz.Pojo.Dto;
+
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class PublishNoteMqDTO {
+
+    private Long userId;
+}

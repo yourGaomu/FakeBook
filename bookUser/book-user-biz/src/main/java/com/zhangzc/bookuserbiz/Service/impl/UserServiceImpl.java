@@ -7,8 +7,10 @@ import com.google.common.collect.Lists;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
+import com.zhangzc.bookcountapi.Pojo.Dto.Resp.FindUserCountsByIdRspDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUsersByIdsReqDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByPhoneRspDTO;
+import com.zhangzc.bookuserbiz.Const.MQConstants;
 import com.zhangzc.bookuserbiz.Const.RedisKeyConstants;
 import com.zhangzc.bookuserbiz.Const.RoleConstants;
 import com.zhangzc.bookuserbiz.Enum.DeletedEnum;
@@ -19,13 +21,17 @@ import com.zhangzc.bookuserbiz.Pojo.Domain.TUser;
 import com.zhangzc.bookuserbiz.Pojo.Domain.TUserRoleRel;
 import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
+import com.zhangzc.bookuserbiz.Pojo.Vo.FindUserProfileReqVO;
+import com.zhangzc.bookuserbiz.Pojo.Vo.FindUserProfileRspVO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.UpdateUserInfoReqVO;
 import com.zhangzc.bookuserbiz.Service.TRoleService;
 import com.zhangzc.bookuserbiz.Service.TUserRoleRelService;
 import com.zhangzc.bookuserbiz.Service.TUserService;
 import com.zhangzc.bookuserbiz.Service.UserService;
 import com.zhangzc.bookuserbiz.Utils.ParamUtils;
+import com.zhangzc.bookuserbiz.Utils.RabbitMqUtil;
 import com.zhangzc.bookuserbiz.Utils.RedisUtil;
+import com.zhangzc.bookuserbiz.rpc.CountRpcService;
 import com.zhangzc.bookuserbiz.rpc.DistributedIdGeneratorRpcService;
 import com.zhangzc.bookuserbiz.rpc.OssRpcService;
 import com.zhangzc.fakebookspringbootstartcontext.Const.LoginUserContextHolder;
@@ -48,6 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -65,12 +72,18 @@ public class UserServiceImpl implements UserService {
     private final TRoleService tRoleService;
     private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
     private final RedisTemplate redisTemplate;
+    private final CountRpcService countRpcService;
+    private final RabbitMqUtil rabbitMqUtil;
 
 
     @Override
     @SneakyThrows
     public R updateUserInfo(UpdateUserInfoReqVO updateUserInfoReqVO) {
         TUser userDO = TUser.builder().build();
+
+        //当前登录的用户id
+        Long userId = LoginUserContextHolder.getUserId();
+
         // 设置当前需要更新的用户 ID
         userDO.setId(LoginUserContextHolder.getUserId());
         // 标识位：是否需要更新
@@ -143,6 +156,10 @@ public class UserServiceImpl implements UserService {
             userDO.setUpdateTime(TimeUtil.getDateTime(LocalDate.now()));
             tuserService.updateById(userDO);
         }
+
+        CompletableFuture.runAsync(() -> {
+            rabbitMqUtil.sendDelayMessage("delay.exchange", MQConstants.TOPIC_DELAY_USER_INFO_UPDATE, String.valueOf(userId), 3L);
+        });
         return R.success();
     }
 
@@ -275,8 +292,8 @@ public class UserServiceImpl implements UserService {
         threadPoolTaskExecutor.submit(() -> {
             try {
                 // 过期时间（保底1天 + 随机秒数，将缓存过期时间打散，防止同一时间大量缓存失效，导致数据库压力太大）
-                long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
-                redisUtil.set(RedisKeyConstants.buildUserInfoKey(id), JsonUtils.toJsonString(findUserByIdRspDTO),expireSeconds);
+                long expireSeconds = 60 * 60 * 24 + RandomUtil.randomInt(60 * 60 * 24);
+                redisUtil.set(RedisKeyConstants.buildUserInfoKey(id), JsonUtils.toJsonString(findUserByIdRspDTO), expireSeconds);
             } catch (Exception e) {
                 log.error("异步存储用户信息到Redis失败，userId:{}", id, e); // 记录异常日志
             }
@@ -304,7 +321,7 @@ public class UserServiceImpl implements UserService {
                 .toList();
 
         // 先从 Redis 缓存中查, multiGet 批量查询提升性能
-        List<String> redisValues =(List<String>) redisUtil.get(redisKeys);
+        List<String> redisValues = (List<String>) redisUtil.get(redisKeys);
         // 如果缓存中不为空
         if (CollUtil.isNotEmpty(redisValues)) {
             // 过滤掉为空的数据
@@ -386,7 +403,7 @@ public class UserServiceImpl implements UserService {
                             String value = JsonUtils.toJsonString(findUserInfoByIdRspDTO);
 
                             // 过期时间（保底1天 + 随机秒数，将缓存过期时间打散，防止同一时间大量缓存失效，导致数据库压力太大）
-                            long expireSeconds = 60*60*24 + RandomUtil.randomInt(60*60*24);
+                            long expireSeconds = 60 * 60 * 24 + RandomUtil.randomInt(60 * 60 * 24);
                             operations.opsForValue().set(userInfoRedisKey, value, expireSeconds, TimeUnit.SECONDS);
                         }
                         return null;
@@ -403,6 +420,88 @@ public class UserServiceImpl implements UserService {
         }
 
         return R.success(findUserByIdRspDTOS);
+    }
+
+    @Override
+    public R<FindUserProfileRspVO> findUserProfile(FindUserProfileReqVO findUserProfileReqVO) throws BizException {
+        Long userId = findUserProfileReqVO.getUserId();
+        if (userId == null) {
+            //up自己查看数据，保证数据的及时性
+            userId = LoginUserContextHolder.getUserId();
+            TUser userDO = tuserService.lambdaQuery().eq(TUser::getId, userId)
+                    .eq(TUser::getIsDeleted, DeletedEnum.NO.getValue())
+                    .one();
+
+            if (Objects.isNull(userDO)) {
+                throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
+            }
+
+            // 构建返参 VO
+            FindUserProfileRspVO findUserProfileRspVO = FindUserProfileRspVO.builder()
+                    .userId(userDO.getId())
+                    .avatar(userDO.getAvatar())
+                    .nickname(userDO.getNickname())
+                    .xiaohashuId(userDO.getXiaohashuId())
+                    .sex(userDO.getSex())
+                    .introduction(userDO.getIntroduction())
+                    .build();
+
+            FindUserCountsByIdRspDTO userCountsByIdRspDTO = countRpcService.findUserCountsByIdRspDTO(userId);
+            if (userCountsByIdRspDTO != null) {
+                findUserProfileRspVO.setFansTotal(String.valueOf(userCountsByIdRspDTO.getFansTotal()));
+                findUserProfileRspVO.setFollowingTotal(String.valueOf(userCountsByIdRspDTO.getFollowingTotal()));
+                findUserProfileRspVO.setNoteTotal(String.valueOf(userCountsByIdRspDTO.getNoteTotal()));
+                findUserProfileRspVO.setLikeTotal(String.valueOf(userCountsByIdRspDTO.getLikeTotal()));
+                findUserProfileRspVO.setCollectTotal(String.valueOf(userCountsByIdRspDTO.getCollectTotal()));
+                findUserProfileRspVO.setLikeAndCollectTotal(String.valueOf(userCountsByIdRspDTO.getCollectTotal() + userCountsByIdRspDTO.getLikeTotal()));
+            }
+            LocalDate birthday = TimeUtil.getLocalDate(userDO.getBirthday());
+            findUserProfileRspVO.setAge(Objects.isNull(birthday) ? 0 : TimeUtil.calculateAge(birthday));
+            return R.success(findUserProfileRspVO);
+        }
+        //从redis里面去查询
+        String s = RedisKeyConstants.buildUserProfileKey(userId);
+        if (redisUtil.hasKey(s)) {
+            Object o = redisUtil.get(s);
+            //反序列化
+            FindUserProfileRspVO findUserProfileRspVO = JsonUtils.parseObject(o.toString(), FindUserProfileRspVO.class);
+            return R.success(findUserProfileRspVO);
+        }
+        TUser userDO = tuserService.lambdaQuery().eq(TUser::getId, userId)
+                .eq(TUser::getIsDeleted, DeletedEnum.NO.getValue())
+                .one();
+
+        if (Objects.isNull(userDO)) {
+            throw new BizException(ResponseCodeEnum.USER_NOT_FOUND);
+        }
+
+        // 构建返参 VO
+        FindUserProfileRspVO findUserProfileRspVO = FindUserProfileRspVO.builder()
+                .userId(userDO.getId())
+                .avatar(userDO.getAvatar())
+                .nickname(userDO.getNickname())
+                .xiaohashuId(userDO.getXiaohashuId())
+                .sex(userDO.getSex())
+                .introduction(userDO.getIntroduction())
+                .build();
+
+        FindUserCountsByIdRspDTO userCountsByIdRspDTO = countRpcService.findUserCountsByIdRspDTO(userId);
+        if (userCountsByIdRspDTO != null) {
+            findUserProfileRspVO.setFansTotal(String.valueOf(userCountsByIdRspDTO.getFansTotal()));
+            findUserProfileRspVO.setFollowingTotal(String.valueOf(userCountsByIdRspDTO.getFollowingTotal()));
+            findUserProfileRspVO.setNoteTotal(String.valueOf(userCountsByIdRspDTO.getNoteTotal()));
+            findUserProfileRspVO.setLikeTotal(String.valueOf(userCountsByIdRspDTO.getLikeTotal()));
+            findUserProfileRspVO.setCollectTotal(String.valueOf(userCountsByIdRspDTO.getCollectTotal()));
+            findUserProfileRspVO.setLikeAndCollectTotal(String.valueOf(userCountsByIdRspDTO.getCollectTotal() + userCountsByIdRspDTO.getLikeTotal()));
+        }
+        LocalDate birthday = TimeUtil.getLocalDate(userDO.getBirthday());
+        findUserProfileRspVO.setAge(Objects.isNull(birthday) ? 0 : TimeUtil.calculateAge(birthday));
+        CompletableFuture.runAsync(() -> {
+            redisUtil.set(s, JsonUtils.toJsonString(findUserProfileRspVO), 60 * 60 * 24 * 30);
+        });
+
+        return R.success(findUserProfileRspVO);
+
     }
 }
 

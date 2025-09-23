@@ -18,7 +18,8 @@ public enum ResponseCodeEnum implements ExceptionInterface {
     ALREADY_FOLLOWED("RELATION-20004", "您已经关注了该用户"),
     CANT_UNFOLLOW_YOUR_SELF("RELATION-20005", "无法取关自己"),
     NOT_FOLLOWED("RELATION-20006", "你未关注对方，无法取关"),
-    OBJECT_CONVERT_ERROR("RELATION-20007","对象转换失败");
+    OBJECT_CONVERT_ERROR("RELATION-20007","对象转换失败"),
+    USER_NOT_FOUND("RELATION-20008", "用户不存在"),
     ;
     ;
     // ----------- 业务异常状态码 -----------

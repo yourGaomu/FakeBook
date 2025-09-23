@@ -12,6 +12,8 @@ import com.rabbitmq.client.LongString;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
+import com.zhangzc.bookcountapi.Pojo.Dto.FindNoteCountsByIdRspDTO;
+import com.zhangzc.bookcountapi.Pojo.Dto.Resp.FindUserCountsByIdRspDTO;
 import com.zhangzc.booknotebiz.Const.MQConstants;
 import com.zhangzc.booknotebiz.Const.RedisKeyConstants;
 import com.zhangzc.booknotebiz.Enum.NoteStatusEnum;
@@ -21,7 +23,9 @@ import com.zhangzc.booknotebiz.Enum.ResponseCodeEnum;
 import com.zhangzc.booknotebiz.Pojo.Domain.*;
 import com.zhangzc.booknotebiz.Pojo.Dto.CollectUnCollectNoteMqDTO;
 import com.zhangzc.booknotebiz.Pojo.Dto.LikeUnlikeNoteMqDTO;
+import com.zhangzc.booknotebiz.Pojo.Dto.PublishNoteMqDTO;
 import com.zhangzc.booknotebiz.Pojo.Vo.*;
+import com.zhangzc.booknotebiz.Rpc.CountRpcService;
 import com.zhangzc.booknotebiz.Rpc.DistributedIdGeneratorRpcService;
 import com.zhangzc.booknotebiz.Rpc.KeyValueRpcService;
 import com.zhangzc.booknotebiz.Rpc.UserRpcService;
@@ -51,16 +55,21 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+
+import javax.crypto.Mac;
 
 @Service
 @Slf4j
 public class NoteServiceImpl implements NoteService {
 
     private final DistributedIdGeneratorRpcService distributedIdGeneratorRpcService;
+    private final CountRpcService countRpcService;
     private final UserRpcService userRpcService;
     private final TTopicService tTopicService;
     private final TNoteService tNoteService;
@@ -79,6 +88,7 @@ public class NoteServiceImpl implements NoteService {
 
     // 手动编写构造函数，为线程池参数添加 @Qualifier
     public NoteServiceImpl(
+            CountRpcService countRpcService,
             TChannelTopicRelService tChannelTopicRelService,
             TChannelService tChannelService,
             RedisHashExample redisHashExample,
@@ -96,6 +106,7 @@ public class NoteServiceImpl implements NoteService {
             TNoteLikeService tNoteLikeService,
             TNoteCollectionService tNoteCollectionService
     ) {
+        this.countRpcService = countRpcService;
         this.tChannelTopicRelService = tChannelTopicRelService;
         this.tChannelService = tChannelService;
         this.redisHashExample = redisHashExample;
@@ -217,9 +228,14 @@ public class NoteServiceImpl implements NoteService {
         try {
             // 笔记入库存储
             tNoteService.save(noteDO);
+            //发送MQ笔记存入用户
+            PublishNoteMqDTO publishNoteMqDTO = PublishNoteMqDTO.builder()
+                    .userId(creatorId)
+                    .build();
+
+            rabbitMqUtil.send("count.exchange", MQConstants.TAG_USER_NOTE_PUBLISH, JsonUtils.toJsonString(publishNoteMqDTO));
         } catch (Exception e) {
             log.error("==> 笔记存储失败", e);
-
             // RPC: 笔记保存失败，则删除笔记内容
             if (StringUtils.isNotBlank(contentUuid)) {
                 keyValueRpcService.deleteNoteContent(contentUuid);
@@ -487,12 +503,10 @@ public class NoteServiceImpl implements NoteService {
             throw new BizException(ResponseCodeEnum.NOTE_NOT_FOUND);
         }
 
-        // 删除redis缓存
-        String noteDetailRedisKey = RedisKeyConstants.buildNoteDetailKey(noteId);
-
         // 同步发送广播模式 MQ，将所有实例中的本地缓存都删除掉
         //todo如果删除了本地缓存，对应的用户点赞的记录也应该删除
-        rabbitMqUtil.sendDelayMessage("delay.exchange", MQConstants.TOPIC_DELETE_NOTE_LOCAL_CACHE, noteDetailRedisKey, 3L);
+        //todo 这里还要重新写一下，记得去删除用户的发布数
+        rabbitMqUtil.sendDelayMessage("delay.exchange", MQConstants.TOPIC_DELETE_NOTE_LOCAL_CACHE, String.valueOf(noteId), 3L);
         log.info("====> MQ：删除笔记本地缓存发送成功...");
 
         return R.success();
@@ -769,6 +783,9 @@ public class NoteServiceImpl implements NoteService {
             throw new BizException(ResponseCodeEnum.PARAM_NOT_VALID);
         //获取操作者id
         Long userId = LoginUserContextHolder.getUserId();
+        if (userId == null) {
+            userId = 103L;
+        }
         //判断笔记是否存在
         Integer result = Integer.valueOf(String.valueOf(checkNoteExist(id, userId)));
         switch (result) {
@@ -797,7 +814,7 @@ public class NoteServiceImpl implements NoteService {
                     if (!b) {
                         threadPoolTaskExecutor.execute(() -> {
                             long expireSeconds = 60 * 60 * 24 + RandomUtil.randomInt(60 * 60 * 24);
-                            InitUserNoteCollectZSet(userNoteCollectZSetKey, userId, expireSeconds);
+                            InitUserNoteCollectZSet(userNoteCollectZSetKey, 103L, expireSeconds);
                         });
                     }
                     throw new BizException(ResponseCodeEnum.NOTE_ALREADY_COLLECTED);
@@ -814,7 +831,7 @@ public class NoteServiceImpl implements NoteService {
                         .eq(TNoteCollection::getNoteId, id)
                         .one();
                 InitCollectBloomFilter(RedisKeyConstants.buildBloomUserNoteCollectListKey(userId), userId, 60 * 60 * 24 + RandomUtil.randomInt(60 * 60 * 24));
-                if (one == null) {
+                if (one != null) {
                     throw new BizException(ResponseCodeEnum.NOTE_ALREADY_COLLECTED);
                 } else {
                     //当前的数据加入布隆过滤器中
@@ -868,7 +885,7 @@ public class NoteServiceImpl implements NoteService {
         // TODO: 4. 发送 MQ, 将收藏数据落库
         threadPoolTaskExecutor.execute(() -> {
             CollectUnCollectNoteMqDTO collectUnCollectNoteMqDTO = CollectUnCollectNoteMqDTO.builder()
-                    .userId(userId)
+                    .userId(103L)
                     .noteId(id)
                     .type(1)
                     .createTime(now)
@@ -1024,6 +1041,62 @@ public class NoteServiceImpl implements NoteService {
 
             });
             return R.success(result);
+        }
+    }
+
+    @Override
+    public R<FindPublishedNoteListRspVO> findPublishedNoteList(FindPublishedNoteListReqVO findPublishedNoteListReqVO) throws BizException, ExecutionException, InterruptedException {
+        //判断用户是否合法
+        Long userId = findPublishedNoteListReqVO.getUserId();
+        //获取游标
+        Long cursor = findPublishedNoteListReqVO.getCursor();
+        //查询数据库，查询笔记，并且按照降序的排序
+        List<TNote> result = tNoteService.selectPublishedNoteListByUserIdAndCursor(userId, cursor);
+        if (result == null || result.size() == 0) {
+            //没有数据
+            return R.success(FindPublishedNoteListRspVO.builder().notes(null).nextCursor(null).build());
+        } else {
+            //采集所有的笔记Id
+            List<Long> noteIds = result.stream().map(TNote::getId).toList();
+            CompletableFuture<Map<Long, FindNoteCountsByIdRspDTO>> future = CompletableFuture.supplyAsync(() -> {
+                try {
+                    List<FindNoteCountsByIdRspDTO> notesCountData = countRpcService.findNotesCountData(noteIds);
+                    return notesCountData.stream().collect(Collectors.toMap(FindNoteCountsByIdRspDTO::getNoteId, p -> p));
+                } catch (BizException e) {
+                    //返回空队列
+                    return new HashMap<>();
+                }
+            });
+
+            FindPublishedNoteListRspVO findPublishedNoteListRspVO = new FindPublishedNoteListRspVO();
+            FindUserByIdRspDTO findUserByIdRspDTO = userRpcService.findById(userId);
+            Map<Long, FindNoteCountsByIdRspDTO> longFindNoteCountsByIdRspDTOMap = future.get();
+            //查询该用户的笔记
+            List<NoteItemRspVO> notes = result.stream().map(sign -> {
+                NoteItemRspVO vo = new NoteItemRspVO();
+                vo.setNoteId(sign.getId());
+                vo.setType(sign.getType());
+                // 获取封面图片
+                String cover = StringUtils.isNotBlank(sign.getImgUris()) ?
+                        StringUtils.split(sign.getImgUris(), ",")[0] : null;
+                vo.setCover(cover);
+                vo.setVideoUri(sign.getVideoUri());
+                vo.setTitle(sign.getTitle());
+                vo.setCreatorId(sign.getCreatorId());
+                vo.setNickname(findUserByIdRspDTO.getNickName());
+                vo.setAvatar(findUserByIdRspDTO.getAvatar());
+                vo.setLikeTotal(String.valueOf(longFindNoteCountsByIdRspDTOMap.get(sign.getId()).getLikeTotal()));
+                return vo;
+            }).toList();
+            //根据笔记的创建时间，获取最晚发布笔记id
+            Optional<TNote> min = result.stream().min(Comparator.comparing(TNote::getCreateTime));
+            cursor = min.get().getId();
+            findPublishedNoteListRspVO.setNotes(notes);
+            findPublishedNoteListRspVO.setNextCursor(cursor);
+            //异步存入redis
+
+
+            return R.success(findPublishedNoteListRspVO);
         }
     }
 

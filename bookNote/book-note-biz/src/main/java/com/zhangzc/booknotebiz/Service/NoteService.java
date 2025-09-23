@@ -1,11 +1,13 @@
 package com.zhangzc.booknotebiz.Service;
 
 
+import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.booknotebiz.Pojo.Vo.*;
 import org.springframework.cloud.client.loadbalancer.Response;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public interface NoteService {
 
@@ -32,4 +34,6 @@ public interface NoteService {
     R<List<FindChannelListRspVO>>findChannelList();
 
     R<List<FindTopicListRspVO>> findTopicList();
+
+    R<FindPublishedNoteListRspVO> findPublishedNoteList(FindPublishedNoteListReqVO findPublishedNoteListReqVO) throws BizException, ExecutionException, InterruptedException;
 }

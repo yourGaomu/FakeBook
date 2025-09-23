@@ -5,18 +5,47 @@
 <mapper namespace="com.zhangzc.bookcountbiz.Mapper.TUserCountMapper">
 
     <resultMap id="BaseResultMap" type="com.zhangzc.bookcountbiz.Pojo.Domain.TUserCount">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="userId" column="user_id" jdbcType="BIGINT"/>
-            <result property="fansTotal" column="fans_total" jdbcType="BIGINT"/>
-            <result property="followingTotal" column="following_total" jdbcType="BIGINT"/>
-            <result property="noteTotal" column="note_total" jdbcType="BIGINT"/>
-            <result property="likeTotal" column="like_total" jdbcType="BIGINT"/>
-            <result property="collectTotal" column="collect_total" jdbcType="BIGINT"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="fansTotal" column="fans_total" jdbcType="BIGINT"/>
+        <result property="followingTotal" column="following_total" jdbcType="BIGINT"/>
+        <result property="noteTotal" column="note_total" jdbcType="BIGINT"/>
+        <result property="likeTotal" column="like_total" jdbcType="BIGINT"/>
+        <result property="collectTotal" column="collect_total" jdbcType="BIGINT"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,user_id,fans_total,
+        id
+        ,user_id,fans_total,
         following_total,note_total,like_total,
         collect_total
     </sql>
+
+    <!-- 批量插入或更新：saveOrUpdateBatch 方法对应的 SQL -->
+    <insert id="saveOrUpdataBatch" parameterType="java.util.Map">
+        INSERT INTO t_user_count (user_id, collect_total)
+        VALUES
+        <foreach collection="entrySet" item="entry" separator=",">
+            (#{entry.key}, #{entry.value})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        collect_total = VALUES(collect_total)
+    </insert>
+
+    <insert id="incrementLikeTotal" parameterType="map">
+        INSERT INTO t_user_count (user_id, like_total)
+        VALUES (#{userId}, #{total}) ON DUPLICATE KEY
+        UPDATE like_total = like_total + (#{total});
+    </insert>
+
+    <insert id="incrementPublishTotalBatch" parameterType="java.util.List">
+            INSERT INTO t_user_count (user_id, note_total)
+            VALUES
+            <foreach collection="list" item="item" separator=",">
+                (#{item.userId}, 1)
+            </foreach>
+            ON DUPLICATE KEY UPDATE
+            note_total = note_total + 1;
+    </insert>
+
 </mapper>

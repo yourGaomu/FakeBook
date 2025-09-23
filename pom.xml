@@ -13,6 +13,7 @@
 
     <!-- 子模块管理，应放在properties外面 -->
     <modules>
+        <module>bookSearch</module>
         <module>bookAuth</module>
         <module>bookGateway</module>
         <module>bookFramework</module>
@@ -23,6 +24,7 @@
         <module>bookNote</module>
         <module>bookRelation</module>
         <module>bookCount</module>
+        <module>bookAI</module>
     </modules>
 
     <properties>

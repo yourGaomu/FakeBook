@@ -1,6 +1,7 @@
 package com.zhangzc.booknotebiz.Controller;
 
 
+import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.booknotebiz.Const.MQConstants;
 import com.zhangzc.booknotebiz.Pojo.Vo.*;
@@ -15,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/note")
@@ -22,6 +24,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NoteController {
     private final NoteService noteService;
+
+    @PostMapping(value = "/published/list")
+    @ApiOperationLog(description = "用户主页 - 已发布笔记列表")
+    public R<FindPublishedNoteListRspVO> findPublishedNoteList(@RequestBody FindPublishedNoteListReqVO findPublishedNoteListReqVO) throws BizException, ExecutionException, InterruptedException {
+        return noteService.findPublishedNoteList(findPublishedNoteListReqVO);
+    }
 
     @PostMapping("/topic/list")
     @ApiOperationLog(description = "查询话题列表")
@@ -67,7 +75,7 @@ public class NoteController {
 
     @PostMapping(value = "/top")
     @ApiOperationLog(description = "置顶/取消置顶笔记")
-    public R topNote(@Validated @RequestBody TopNoteReqVO topNoteReqVO) {
+    public R topNote( @RequestBody TopNoteReqVO topNoteReqVO) {
         return noteService.topNote(topNoteReqVO);
     }
 
@@ -95,4 +103,5 @@ public class NoteController {
     public R unCollectNote(@RequestBody UnCollectNoteReqVO unCollectNoteReqVO) {
         return noteService.unCollectNote(unCollectNoteReqVO);
     }
+
 }

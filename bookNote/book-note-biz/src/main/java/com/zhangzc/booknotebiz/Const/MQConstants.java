@@ -28,8 +28,17 @@ public interface MQConstants {
 
 
     /**
-     * Topic: 收藏、取消收藏共用一个
+     * 用户收藏或者取消收藏笔记
      */
+    String TOPIC_USER_COLLECT_OR_UN_COLLECT = "UserCollectUnCollectTopic";
+
+
     String TOPIC_COLLECT_OR_UN_COLLECT = "CollectUnCollectTopic";
+
+
+    /**
+     * 用户笔记发布
+     */
+    String TAG_USER_NOTE_PUBLISH = "UserNotePublish";
 }
 

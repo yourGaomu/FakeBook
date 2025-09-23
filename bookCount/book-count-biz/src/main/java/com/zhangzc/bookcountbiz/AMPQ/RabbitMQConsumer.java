@@ -2,8 +2,10 @@ package com.zhangzc.bookcountbiz.AMPQ;
 
 
 import com.alibaba.nacos.shaded.com.google.gson.Gson;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.phantomthief.collection.BufferTrigger;
 import com.google.common.reflect.TypeToken;
 import com.zhangzc.bookcommon.Exceptions.BizException;
@@ -12,13 +14,12 @@ import com.zhangzc.bookcountbiz.AMPQ.BufferConsumer.CountNoteConsumer;
 import com.zhangzc.bookcountbiz.Const.MQConstants;
 import com.zhangzc.bookcountbiz.Const.RedisKeyConstants;
 import com.zhangzc.bookcountbiz.Enum.ResponseCodeEnum;
-import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCollection;
 import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCount;
 import com.zhangzc.bookcountbiz.Pojo.Domain.TUserCount;
 import com.zhangzc.bookcountbiz.Pojo.Dto.CollectUnCollectNoteMqDTO;
-import com.zhangzc.bookcountbiz.Pojo.Dto.CountLikeUnlikeNoteMqDTO;
+import com.zhangzc.bookcountbiz.Pojo.Dto.PublishNoteMqDTO;
 import com.zhangzc.bookcountbiz.Pojo.Vo.CountFollowUnfollowMqDTO;
-import com.zhangzc.bookcountbiz.Service.TNoteContentService;
+import com.zhangzc.bookcountbiz.Rpc.NoteRpcService;
 import com.zhangzc.bookcountbiz.Service.TNoteCountService;
 import com.zhangzc.bookcountbiz.Service.TUserCountService;
 import com.zhangzc.bookcountbiz.Utills.RabbitMqUtil;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -48,6 +50,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class RabbitMQConsumer {
+
+    private final NoteRpcService rpcService;
+
+    // 正确配置ObjectMapper
+    private ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule()); // 注册Java 8日期时间模块
 
 
     @PostConstruct
@@ -65,12 +73,35 @@ public class RabbitMQConsumer {
                 .linger(Duration.ofSeconds(1)) // 多久聚合一次
                 .setConsumerEx(countNoteConsumer::consumeCountMessage)
                 .build();
+
+        bufferTrigger3 = BufferTrigger.<String>batchBlocking()
+                .bufferSize(50000) // 缓存队列的最大容量
+                .batchSize(1000)   // 一批次最多聚合 1000 条
+                .linger(Duration.ofSeconds(1)) // 多久聚合一次
+                .setConsumerEx(this::consumeUserPublishMessage)
+                .build();
+    }
+
+    private void consumeUserPublishMessage(List<String> strings) {
+        //反序列化
+        if (strings == null || strings.isEmpty()) {
+            log.warn("==> 消息为空，不会处理");
+        } else {
+            List<PublishNoteMqDTO> publishNoteMqDTOS = strings.stream().map(string -> JsonUtils.parseObject(string, PublishNoteMqDTO.class)).toList();
+            tUserCountService.incrementPublishTotalBatch(publishNoteMqDTOS);
+            //存入redis
+            String s = RedisKeyConstants.buildCountUserKey(publishNoteMqDTOS.get(0).getUserId());
+            if (redisUtil.hasKey(s))
+                redisTemplate.opsForHash().increment(s, RedisKeyConstants.FIELD_NOTE_TOTAL, publishNoteMqDTOS.size());
+        }
+
     }
 
     // 每秒创建 5000 个令牌
     private RateLimiter rateLimiter = RateLimiter.create(5000);
     private BufferTrigger<String> bufferTrigger;
     private BufferTrigger<String> bufferTrigger2;
+    private BufferTrigger<String> bufferTrigger3;
     @Qualifier("taskExecutor")
     private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
     private final RedisUtil redisUtil;
@@ -82,16 +113,65 @@ public class RabbitMQConsumer {
     private final TNoteCountService tNoteCountService;
 
 
+    @RabbitListener(queues = "count.UserNotePulishqueue")
+    public void consumeUserPublishCountMessage(String message) {
+
+        bufferTrigger3.enqueue(message);
+
+    }
+
+
+    @RabbitListener(queues = "count.UserCollectionqueue")
+    public void consumeUserCollectionMessage(String message) {
+        //使用令牌
+        log.info("开始处理用户收藏的消息");
+        //开始序列化
+        try {
+            if (message == null || message.equals("")) {
+                log.warn("消息为空");
+            } else {
+                // 使用 TypeReference 指定复杂泛型类型
+                Map<String, List<CollectUnCollectNoteMqDTO>> longListMap =
+                        objectMapper.readValue(message, new TypeReference<Map<String, List<CollectUnCollectNoteMqDTO>>>() {
+                        });
+                Map<String, Long> result = new HashMap<>();
+                //统计每个用户的收藏或者取消收藏笔记的数量
+                longListMap.forEach((noteId, v) -> {
+                    Long total = 0L;
+                    for (CollectUnCollectNoteMqDTO dto : v) {
+                        if (dto.getType() == 1) {
+                            total++;
+                        } else if (dto.getType() == 0) {
+                            total--;
+                        }
+                    }
+                    result.put(noteId, total);
+                });
+                //去数据库更新或者保存
+                tUserCountService.saveOrUpdataBatch(result);
+            }
+        } catch (Exception e) {
+            log.error("==> 转换计数数据失败，message:{}", message, e);
+        }
+
+    }
+
+
     @RabbitListener(queues = "count.collectionDBqueue")
     public void consumeCollectionMessage(String message) {
         try {
             //开始序列化
+            if (message == null || message.equals("")) {
+                log.info("消息为空");
+                return;
+            }
             List<CollectUnCollectNoteMqDTO> tNoteCollections = JsonUtils.parseList(message, new TypeReference<List<CollectUnCollectNoteMqDTO>>() {
             });// 泛型类型引用)
             //开始计数
             //先按照笔记id分组
             Map<Long, List<CollectUnCollectNoteMqDTO>> collect = tNoteCollections.stream().collect(Collectors.groupingBy(CollectUnCollectNoteMqDTO::getNoteId));
             collect.forEach((k, v) -> {
+
                 //开始计数
                 int count = v.stream().filter(sign -> sign.getType() == 1).collect(Collectors.toList()).size();
                 int uncount = v.stream().filter(sign -> sign.getType() == 0).collect(Collectors.toList()).size();
@@ -121,7 +201,7 @@ public class RabbitMQConsumer {
     public void consumeCountMessageToNoteDB(String message) {
         try {
             log.info("开始处理消息");
-            if (message == null){
+            if (message == null) {
                 log.info("消息为空不会处理");
             }
             bufferTrigger2.enqueue(message);
@@ -219,5 +299,23 @@ public class RabbitMQConsumer {
             , key = MQConstants.TAG_COUNT_DB
     ))
     public void consumeCountMessage2(String message) {
+    }
+
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "count.UserCollectionqueue"),
+            exchange = @Exchange(name = "count.exchange", type = ExchangeTypes.TOPIC),
+            key = MQConstants.TOPIC_USER_COLLECT_OR_UN_COLLECT
+    ))
+    public void consumeCountMessage1(String message) {
+    }
+
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "count.UserNotePulishqueue"),
+            exchange = @Exchange(name = "count.exchange", type = ExchangeTypes.TOPIC),
+            key = MQConstants.TAG_USER_NOTE_PUBLISH
+    ))
+    public void consumeCountMessage5(String message) {
     }
 }

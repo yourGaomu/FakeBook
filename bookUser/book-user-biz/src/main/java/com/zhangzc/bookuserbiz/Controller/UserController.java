@@ -6,6 +6,8 @@ import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUsersByIdsReqDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
+import com.zhangzc.bookuserbiz.Pojo.Vo.FindUserProfileReqVO;
+import com.zhangzc.bookuserbiz.Pojo.Vo.FindUserProfileRspVO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.UpdateUserInfoReqVO;
 import com.zhangzc.bookuserbiz.Service.UserService;
 import com.zhangzc.fakebookspringbootstartbizoperationlog.Aspect.AspectClass.ApiOperationLog;
@@ -31,6 +33,16 @@ public class UserController {
 
     private final UserService userService;
 
+
+    /**
+     * 获取用户主页信息
+     *
+     * @return
+     */
+    @PostMapping(value = "/profile")
+    public R<FindUserProfileRspVO> findUserProfile(@RequestBody FindUserProfileReqVO findUserProfileReqVO) throws BizException {
+        return userService.findUserProfile(findUserProfileReqVO);
+    }
 
     /**
      * 用户信息修改

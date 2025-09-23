@@ -3,6 +3,7 @@ package com.zhangzc.booknotebiz.AMQP;
 import com.github.phantomthief.collection.BufferTrigger;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
 import com.zhangzc.booknotebiz.Const.MQConstants;
+import com.zhangzc.booknotebiz.Const.RedisKeyConstants;
 import com.zhangzc.booknotebiz.Pojo.Domain.TNoteCollection;
 import com.zhangzc.booknotebiz.Pojo.Domain.TNoteLike;
 import com.zhangzc.booknotebiz.Pojo.Dto.CollectUnCollectNoteMqDTO;
@@ -54,12 +55,12 @@ public class RabbitMQConsumer {
     private void consumeCollectAndUncollectMessage(List<String> strings) {
         //开始序列化
         log.info("当前有{}条消息", strings.size());
-        if (strings == null) {
+        if (strings == null || strings.isEmpty()) {
             return;
         }
         List<CollectUnCollectNoteMqDTO> list = strings.stream()
                 .map(string -> JsonUtils.parseObject(string, CollectUnCollectNoteMqDTO.class)).toList();
-        //按照分组，按照标签来
+        //按照类型分组，按照标签来
         Map<Integer, List<CollectUnCollectNoteMqDTO>> collect = list.stream()
                 .collect(Collectors.groupingBy(CollectUnCollectNoteMqDTO::getType));
 
@@ -80,26 +81,19 @@ public class RabbitMQConsumer {
     }
 
     private void handleUserUncollectNoteMessage(List<CollectUnCollectNoteMqDTO> v) {
-        //按照用户id分组
+        //按照笔记id分组
         Map<Long, List<CollectUnCollectNoteMqDTO>> collect = v.stream()
-                .collect(Collectors.groupingBy(CollectUnCollectNoteMqDTO::getUserId));
-        collect.forEach((k, value) -> {
-            //发送用户取消收藏消息
-            // todo rabbitMqUtil.send("user.exchange", MQConstants.TAG_USER_UNCOLLECT_NOTE, JsonUtils.toJsonString(v));
-        });
+                .collect(Collectors.groupingBy(CollectUnCollectNoteMqDTO::getNoteId));
+        //发送用户取消收藏消息
+        rabbitMqUtil.send("count.exchange", MQConstants.TOPIC_USER_COLLECT_OR_UN_COLLECT, JsonUtils.toJsonString(collect));
+
     }
 
     private void handleUserCollectNoteMessage(List<CollectUnCollectNoteMqDTO> v) {
-        //按照用户id分组
+        //按照笔记id分组
         Map<Long, List<CollectUnCollectNoteMqDTO>> collect = v.stream()
-                .collect(Collectors.groupingBy(CollectUnCollectNoteMqDTO::getUserId));
-
-
-
-        collect.forEach((k, value) -> {
-            //发送用户收藏消息
-            rabbitMqUtil.send("user.exchange", MQConstants.TAG_USER_COLLECT_NOTE, JsonUtils.toJsonString(v));
-        });
+                .collect(Collectors.groupingBy(CollectUnCollectNoteMqDTO::getNoteId));
+        rabbitMqUtil.send("count.exchange", MQConstants.TOPIC_USER_COLLECT_OR_UN_COLLECT, JsonUtils.toJsonString(collect));
     }
 
     private void HandleUncollectNoteMessage(List<CollectUnCollectNoteMqDTO> v) {
@@ -114,7 +108,7 @@ public class RabbitMQConsumer {
         }).toList();
         tNoteCollectService.saveOrUpdateTnoteCollection(list);
         CompletableFuture.runAsync(() -> {
-            rabbitMqUtil.send("count.exchange", MQConstants.TAG_COUNT_COLLECT_UNCOLLECT, JsonUtils.toJsonString(v));
+            rabbitMqUtil.send("collection.exchange", MQConstants.TAG_COUNT_COLLECT_UNCOLLECT, JsonUtils.toJsonString(v));
         });
     }
 
@@ -130,7 +124,7 @@ public class RabbitMQConsumer {
         }).toList();
         tNoteCollectService.saveOrUpdateTnoteCollection(list);
         CompletableFuture.runAsync(() -> {
-            rabbitMqUtil.send("count.exchange", MQConstants.TAG_COUNT_COLLECT_UNCOLLECT, JsonUtils.toJsonString(v));
+            rabbitMqUtil.send("collection.exchange", MQConstants.TAG_COUNT_COLLECT_UNCOLLECT, JsonUtils.toJsonString(v));
         });
     }
 
@@ -232,7 +226,12 @@ public class RabbitMQConsumer {
     public void consumeDelayMessageQueue(String message) {
         threadPoolTaskExecutor.submit(() -> {
             try {
-                redisUtil.del(message);
+                // 删除redis缓存
+                String noteDetailRedisKey = RedisKeyConstants.buildNoteDetailKey(Long.valueOf(message));
+
+                redisUtil.del(noteDetailRedisKey);
+                //发送Mq消息通知对应的用户的分布数减去一
+                rabbitMqUtil.send("count.exchange", MQConstants.TAG_USER_NOTE_PUBLISH, message);
             } catch (Exception e) {
                 e.printStackTrace();
                 log.error("==> 删除笔记Redis缓存失败，noteId:{}", message, e);
