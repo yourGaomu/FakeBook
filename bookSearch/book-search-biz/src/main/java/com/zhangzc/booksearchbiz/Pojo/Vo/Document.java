@@ -1,10 +1,8 @@
-package com.zhangzc.booksearchbiz.Pojo.Domain;
+package com.zhangzc.booksearchbiz.Pojo.Vo;
 
 import lombok.Data;
-import org.dromara.easyes.annotation.IndexName;
 
 @Data
-@IndexName
 public class Document {
     /**
      * es中的唯一id

@@ -55,6 +55,14 @@
         <dependencies>
 
 
+            <!-- 关键：统一锁定 Lombok 版本为 1.18.30（适配 JDK 17） -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.30</version> <!-- 必须 ≥ 1.18.22 -->
+                <scope>provided</scope>
+            </dependency>
+
             <!-- Bootstrap上下文支持（加载配置中心配置） -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
