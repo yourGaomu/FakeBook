@@ -1,4 +1,4 @@
-package com.zhangzc.booksearchbiz.Mapper;
+package com.zhangzc.booksearchbiz.Mapper.Es;
 
 import com.zhangzc.booksearchbiz.Pojo.Vo.Document;
 import org.dromara.easyes.core.kernel.BaseEsMapper;

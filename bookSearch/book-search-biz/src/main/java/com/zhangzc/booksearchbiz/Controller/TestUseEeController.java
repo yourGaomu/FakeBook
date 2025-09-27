@@ -1,7 +1,9 @@
 package com.zhangzc.booksearchbiz.Controller;
 
-import com.zhangzc.booksearchbiz.Mapper.DocumentMapper;
+import com.zhangzc.booksearchbiz.Mapper.Es.DocumentMapper;
+import com.zhangzc.booksearchbiz.Mapper.Es.SearchNoteMapper;
 import com.zhangzc.booksearchbiz.Pojo.Vo.Document;
+import com.zhangzc.booksearchbiz.Pojo.Vo.SearchNoteRspVO;
 import lombok.RequiredArgsConstructor;
 import org.dromara.easyes.core.conditions.select.LambdaEsQueryWrapper;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,17 +14,20 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class TestUseEeController {
-     final DocumentMapper documentMapper;
-    
+    final DocumentMapper documentMapper;
+    final SearchNoteMapper searchNoteMapper;
+    private final SearchNoteStringDateTestGenerator searchNoteStringDateTestGenerator;
+
     @GetMapping("/insert")
     public Integer insert() {
-        // 初始化-> 新增数据
-        Document document = new Document();
-        document.setTitle("老汉");
+        List<SearchNoteRspVO> searchNoteRspVOS = searchNoteStringDateTestGenerator.generateTestData(100);
+        return searchNoteMapper.insertBatch(searchNoteRspVOS);
+    }
 
-
-        document.setContent("推*技术过硬");
-        return documentMapper.insert(document);
+    @GetMapping("/create")
+    public Integer create() {
+        searchNoteMapper.createIndex();
+        return 1;
     }
 
     @GetMapping("/search")

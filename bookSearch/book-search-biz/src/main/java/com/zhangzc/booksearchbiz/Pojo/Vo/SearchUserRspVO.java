@@ -14,7 +14,7 @@ import org.dromara.easyes.annotation.rely.IdType;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@IndexName(value = "SearchUserInfo")
+@IndexName(value = "searchuserinfo")
 public class SearchUserRspVO {
 
     /**

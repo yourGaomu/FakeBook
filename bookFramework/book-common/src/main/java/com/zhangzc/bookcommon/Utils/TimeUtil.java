@@ -1,9 +1,13 @@
 package com.zhangzc.bookcommon.Utils;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public class TimeUtil {
+
+    private static final DateTimeFormatter FULL_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
 
     /**
      * 计算年龄
@@ -44,5 +48,27 @@ public class TimeUtil {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
+    public static String getLocalDateTime() {
+        LocalDateTime time = LocalDateTime.now();
+        return time.format(FULL_TIME_FORMATTER);
+    }
+
+    //当天时间减去一天
+    public static String getLocalDateTimeDownOneDay(){
+        LocalDateTime time = LocalDateTime.now().minusDays(1);
+        return time.format(FULL_TIME_FORMATTER);
+    }
+
+    //当天时间减去一周
+    public static String getLocalDateTimeDownOneWeek(){
+        LocalDateTime time = LocalDateTime.now().minusWeeks(1);
+        return time.format(FULL_TIME_FORMATTER);
+    }
+
+    //当天时间减去半年
+    public static String getLocalDateTimeDownHalfYear(){
+        LocalDateTime time = LocalDateTime.now().minusMonths(6);
+        return time.format(FULL_TIME_FORMATTER);
+    }
 
 }

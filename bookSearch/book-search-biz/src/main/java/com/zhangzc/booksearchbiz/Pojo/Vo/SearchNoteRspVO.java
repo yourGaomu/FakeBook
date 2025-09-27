@@ -4,9 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dromara.easyes.annotation.HighLight;
 import org.dromara.easyes.annotation.IndexField;
 import org.dromara.easyes.annotation.IndexId;
 import org.dromara.easyes.annotation.IndexName;
+import org.dromara.easyes.annotation.rely.FieldStrategy;
 import org.dromara.easyes.annotation.rely.FieldType;
 import org.dromara.easyes.annotation.rely.IdType;
 
@@ -22,7 +24,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@IndexName(value = "SearchNoteInfo")
+@IndexName(value = "search_note_image_text_info")
 public class SearchNoteRspVO {
 
     /**
@@ -36,13 +38,27 @@ public class SearchNoteRspVO {
     private Long noteId;
 
     /**
+     * 笔记类型：null：综合 / 0：图文 / 1：视频
+     */
+    //FieldStrategy.IGNORE: 忽略判断,无论字段值为什么,都会被更新
+    @IndexField(strategy = FieldStrategy.IGNORED)
+    private Integer type;
+
+    /**
      * 封面
      */
     private String cover;
 
+
+    /**
+     * 话题
+    * */
+    private String topicName;
+
     /**
      * 标题
      */
+    @HighLight
     private String title;
 
     /**
@@ -63,13 +79,25 @@ public class SearchNoteRspVO {
     /**
      * 最后一次编辑时间
      */
-    @IndexField(fieldType = FieldType.DATE, dateFormat = "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis")
+    @IndexField(fieldType = FieldType.DATE)
     private LocalDateTime updateTime;
 
     /**
      * 被点赞总数
      */
-    private String likeTotal;
+    private Long likeTotal;
 
+    /**
+     * 被收藏总数
+     *
+     */
+    private Long collectTotal;
+
+
+    /**
+     * 评论总数
+     *
+     */
+    private Long commentTotal;
 }
 

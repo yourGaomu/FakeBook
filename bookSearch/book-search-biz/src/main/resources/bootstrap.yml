@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: book-search-biz
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 47.108.58.72:8848  # 主端口，gRPC端口会自动推导（8848+1000=9848）
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 47.108.58.72:8848  # 与注册中心地址一致，可复用
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+        file-extension: yaml
+        extension-configs:
+          - data-id: book_Redis.yaml
+            group: redis
+            refresh: true
+
+
+
+  # 导入主配置文件（应用名.yaml）
+  config:
+    import:
+      - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?group=DEFAULT_GROUP&namespace=${spring.cloud.nacos.config.namespace}
+
+
+
+logging:
+  level:
+    # Nacos配置加载细节（调试用，生产可改为INFO）
+    com.alibaba.cloud.nacos: DEBUG
+    # 网关路由和配置加载日志（按需开启）
+    org.springframework.cloud.gateway: INFO
+    # Spring配置源加载过程（调试用，生产可关闭）
+    org.springframework.cloud.bootstrap: INFO
+    org.springframework.core.env: INFO
