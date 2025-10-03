@@ -9,6 +9,7 @@ import com.zhangzc.bookkvapi.Pojo.Dto.Resp.FindNoteContentRspDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -44,6 +45,23 @@ public class KeyValueRpcService {
         }
 
         return response.getData().getContent();
+    }
+
+
+    public List<FindNoteContentRspDTO> findNoteContents(List<String> uuIds) {
+        List<FindNoteContentReqDTO> list = uuIds.stream().map(id -> {
+            FindNoteContentReqDTO findNoteContentReqDTO = new FindNoteContentReqDTO();
+            findNoteContentReqDTO.setUuid(id);
+            return findNoteContentReqDTO;
+        }).toList();
+
+        R<List<FindNoteContentRspDTO>> response = keyValueFeignApi.findNoteContents(list);
+
+        if (Objects.isNull(response) || !response.isSuccess() || Objects.isNull(response.getData())) {
+            return null;
+        }
+
+        return response.getData();
     }
 
 }

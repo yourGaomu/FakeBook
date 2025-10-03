@@ -2,14 +2,17 @@ package com.zhangzc.booknotebiz.Controller;
 
 
 import com.zhangzc.bookcommon.Exceptions.BizException;
+import com.zhangzc.bookcommon.Utils.PageResponse;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.booknotebiz.Pojo.Vo.*;
 import com.zhangzc.booknotebiz.Service.NoteService;
 import com.zhangzc.fakebookspringbootstartbizoperationlog.Aspect.AspectClass.ApiOperationLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.client.loadbalancer.Response;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-\
+
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -19,6 +22,18 @@ import java.util.concurrent.ExecutionException;
 @RequiredArgsConstructor
 public class NoteController {
     private final NoteService noteService;
+
+    @PostMapping("/discover/note/list")
+    public PageResponse<List<NoteVO>> showNotesInfoOnDiscoverPage(ChannelPageRequest channelPageRequest) {
+        return noteService.showNotesInfoOnDiscoverPage(channelPageRequest);
+    }
+
+    @PostMapping(value = "/profile/note/list")
+    @ApiOperationLog(description = "用户主页 - 已发布笔记列表")
+    public  PageResponse<List<NotePageInfo>> findProfileNoteList(@RequestBody FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException, ExecutionException, InterruptedException {
+        return noteService.findProfileNoteList(findProfileNoteListReqVO);
+    }
+
 
     @PostMapping(value = "/published/list")
     @ApiOperationLog(description = "用户主页 - 已发布笔记列表")
@@ -97,6 +112,12 @@ public class NoteController {
     @ApiOperationLog(description = "取消收藏笔记")
     public R unCollectNote(@RequestBody UnCollectNoteReqVO unCollectNoteReqVO) {
         return noteService.unCollectNote(unCollectNoteReqVO);
+    }
+
+    @PostMapping(value = "/isLikedAndCollectedData")
+    @ApiOperationLog(description = "获取当前用户是否点赞、收藏数据")
+    public R<FindNoteIsLikedAndCollectedRspVO> isLikedAndCollectedData(@RequestBody FindNoteIsLikedAndCollectedReqVO findNoteIsLikedAndCollectedReqVO) throws BizException {
+        return noteService.isLikedAndCollectedData(findNoteIsLikedAndCollectedReqVO);
     }
 
 }

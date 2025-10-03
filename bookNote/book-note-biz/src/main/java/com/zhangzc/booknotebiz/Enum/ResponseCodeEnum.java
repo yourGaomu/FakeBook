@@ -27,8 +27,8 @@ public enum ResponseCodeEnum implements ExceptionInterface {
     NOTE_LIKE_REPEAT("NOTE-20009", "您已点赞过该笔记"),
     NOTE_NOT_LIKED("NOTE-20009", "您未点赞该篇笔记，无法取消点赞"),
     NOTE_ALREADY_COLLECTED("NOTE-20010", "您已经收藏过该笔记"),
-    NOTE_NOT_COLLECTED("NOTE-20011", "您未收藏该篇笔记，无法取消收藏")
-    ;
+    NOTE_NOT_COLLECTED("NOTE-20011", "您未收藏该篇笔记，无法取消收藏"),
+    CHANNEL_NOT_FOUND("NOTE-20012", "频道不存在");
 
     // 异常码
     private final String code;

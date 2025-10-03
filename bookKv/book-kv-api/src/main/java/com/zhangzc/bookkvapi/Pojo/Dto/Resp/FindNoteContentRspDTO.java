@@ -14,7 +14,7 @@ import java.util.UUID;
 public class FindNoteContentRspDTO {
 
     /**
-     * 笔记 ID
+     * 笔记内容 ID
      */
     private UUID noteId;
 

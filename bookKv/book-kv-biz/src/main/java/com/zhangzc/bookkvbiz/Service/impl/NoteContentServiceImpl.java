@@ -16,6 +16,7 @@ import lombok.SneakyThrows;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -75,5 +76,22 @@ public class NoteContentServiceImpl implements NoteContentService {
             throw new BizException(ResponseCodeEnum.NOTE_CONTENT_DELETE_FAIL);
         }
         return R.success();
+    }
+
+    @Override
+    public R<List<FindNoteContentRspDTO>> findNoteContents(List<FindNoteContentReqDTO> addNoteContentReqDTO) {
+        List<String> list = addNoteContentReqDTO.stream().map(FindNoteContentReqDTO::getUuid).toList();
+
+        LambdaQueryWrapper<TNoteContent> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper
+                .in(TNoteContent::getId, list);
+        List<TNoteContent> tNoteContents = tNoteContentService.list(queryWrapper);
+        List<FindNoteContentRspDTO> result = tNoteContents.stream().map(tNoteContent -> {
+            FindNoteContentRspDTO findNoteContentRspDTO = new FindNoteContentRspDTO();
+            findNoteContentRspDTO.setContent(tNoteContent.getContent());
+            findNoteContentRspDTO.setNoteId((UUID.fromString(tNoteContent.getId())));
+            return findNoteContentRspDTO;
+        }).toList();
+        return R.success(result);
     }
 }

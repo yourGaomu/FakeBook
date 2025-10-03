@@ -4,16 +4,17 @@ package com.zhangzc.booknotebiz.Service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.RandomUtil;
-import com.alibaba.nacos.shaded.io.grpc.internal.JsonUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.rabbitmq.client.LongString;
 import com.zhangzc.bookcommon.Exceptions.BizException;
+import com.zhangzc.bookcommon.Utils.PageResponse;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
 import com.zhangzc.bookcountapi.Pojo.Dto.FindNoteCountsByIdRspDTO;
-import com.zhangzc.bookcountapi.Pojo.Dto.Resp.FindUserCountsByIdRspDTO;
+import com.zhangzc.bookkvapi.Pojo.Dto.Resp.FindNoteContentRspDTO;
 import com.zhangzc.booknotebiz.Const.MQConstants;
 import com.zhangzc.booknotebiz.Const.RedisKeyConstants;
 import com.zhangzc.booknotebiz.Enum.NoteStatusEnum;
@@ -57,12 +58,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-
-import javax.crypto.Mac;
 
 @Service
 @Slf4j
@@ -1098,6 +1096,306 @@ public class NoteServiceImpl implements NoteService {
 
             return R.success(findPublishedNoteListRspVO);
         }
+    }
+
+    @Override
+    public PageResponse findProfileNoteList(FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException {
+        //获取用户id
+        Long userId = findProfileNoteListReqVO.getUserId();
+        if (userId == null) {
+            //返回空参
+            throw new BizException(ResponseCodeEnum.PARAM_NOT_VALID);
+        }
+        //查询对应的用户信息
+        FindUserByIdRspDTO findUserByIdRspDTO = userRpcService.findById(userId);
+        //获取第几页
+        Long pageNo = findProfileNoteListReqVO.getPageNo();
+        if (pageNo == null) {
+            pageNo = 1L;
+        }
+        //获取类型
+        Integer type = Integer.parseInt(findProfileNoteListReqVO.getType().toString());
+        if (type == null) {
+            throw new BizException(ResponseCodeEnum.PARAM_NOT_VALID);
+        }
+        List<NotePageInfo> result = new ArrayList<>();
+
+        //按照用户类型搜查来构建查询条件
+        switch (type) {
+            case 1:
+                //查询自己发布的笔记
+                LambdaQueryWrapper<TNote> tNoteLambdaQueryWrapper = handlePublishedNoteList(userId);
+                //执行查询
+                IPage<TNote> page = new Page<>(pageNo, 10);
+                IPage<TNote> page1 = tNoteService.page(page, tNoteLambdaQueryWrapper);
+                //获取结果
+                List<TNote> records = page1.getRecords();
+                //开始赋值遍历结果
+                //获取笔记id集合
+                List<Long> noteIds = records.stream().map(TNote::getId).toList();
+                //笔记UUID集合
+                List<String> noteIdContentLikeUuids4 = records.stream().map(TNote::getContentUuid).toList();
+                //获取笔记内容和笔记ID对应表
+                Map<Long, String> noteIdContentUuidMap = records.stream().collect(Collectors.toMap(TNote::getId, TNote::getContentUuid));
+                //开始异步任务调取笔记点赞，评论，收藏数量,按照笔记id分组
+                Map<Long, FindNoteCountsByIdRspDTO> countMap = startAsyNotesCounts(noteIds);
+                //寻找笔记内容
+                Map<String, String> contentMap = startAsyNotesContent(noteIdContentLikeUuids4);
+                //构建结果集
+                records.forEach(record -> {
+                    NotePageInfo notePageInfo = new NotePageInfo();
+                    notePageInfo.setId(record.getId().toString());
+                    notePageInfo.setLikeTotal(countMap.get(record.getId()).getLikeTotal().intValue());
+                    notePageInfo.setCollectTotal(countMap.get(record.getId()).getCollectTotal().intValue());
+                    notePageInfo.setCommentTotal(countMap.get(record.getId()).getCommentTotal().intValue());
+                    notePageInfo.setContent(contentMap.get(noteIdContentUuidMap.get(record.getId())));
+                    notePageInfo.setTitle(record.getTitle());
+                    //如果是图片笔记则应该获取第一张图片为封面
+                    if (record.getType() == 0) {
+                        notePageInfo.setType(0);
+                        notePageInfo.setCover(record.getImgUris().split(",")[0]);
+                    } else {
+                        notePageInfo.setType(1);
+                        notePageInfo.setVideoUri(record.getVideoUri());
+                    }
+                    result.add(notePageInfo);
+                });
+                break;
+            case 2:
+                //查询自己收藏的笔记
+                LambdaQueryWrapper<TNoteCollection> tNoteCollectionLambdaQueryWrapper = handleCollectNoteList(userId);
+                IPage<TNoteCollection> page2 = new Page<>(pageNo, 10);
+                IPage<TNoteCollection> page3 = tNoteCollectService.page(page2, tNoteCollectionLambdaQueryWrapper);
+                List<TNoteCollection> noteCollections = page3.getRecords();
+                //笔记id集合
+                List<Long> noteIdContentUuids = noteCollections.stream().map(TNoteCollection::getNoteId).toList();
+                //查询笔记集合
+                List<TNote> noteColct = tNoteService.lambdaQuery()
+                        .eq(TNote::getStatus, 1)
+                        .eq(TNote::getVisible, 0)
+                        .in(TNote::getId, noteIdContentUuids).list();
+                //获取笔记内容和笔记ID对应表
+                Map<Long, String> noteIdContentCollectionUuidMap = tNoteService.listByIds(noteIdContentUuids).stream().collect(Collectors.toMap(TNote::getId, TNote::getContentUuid));
+                //获取笔记UUID
+                List<String> noteIdContentCollectionUuids = noteColct.stream().map(TNote::getContentUuid).toList();
+                //开始异步任务调取笔记点赞，评论，收藏数量,按照笔记id分组
+                Map<Long, FindNoteCountsByIdRspDTO> countMap2 = startAsyNotesCounts(noteIdContentUuids);
+                //寻找笔记内容
+                Map<String, String> contentMap2 = startAsyNotesContent(noteIdContentCollectionUuids);
+                noteColct.forEach(record -> {
+                    NotePageInfo notePageInfo = new NotePageInfo();
+                    notePageInfo.setId(record.getId().toString());
+                    notePageInfo.setLikeTotal(countMap2.get(record.getId()).getLikeTotal().intValue());
+                    notePageInfo.setCollectTotal(countMap2.get(record.getId()).getCollectTotal().intValue());
+                    notePageInfo.setCommentTotal(countMap2.get(record.getId()).getCommentTotal().intValue());
+                    notePageInfo.setContent(contentMap2.get(noteIdContentCollectionUuidMap.get(record.getId())));
+                    notePageInfo.setTitle(record.getTitle());
+                    //如果是图片笔记则应该获取第一张图片为封面
+                    if (record.getType() == 0) {
+                        notePageInfo.setType(0);
+                        notePageInfo.setCover(record.getImgUris().split(",")[0]);
+                    } else {
+                        notePageInfo.setType(1);
+                        notePageInfo.setVideoUri(record.getVideoUri());
+                    }
+                    result.add(notePageInfo);
+                });
+                break;
+            case 3:
+                //查询自己点赞的笔记
+                LambdaQueryWrapper<TNoteLike> tNoteLikeLambdaQueryWrapper = handleLikeNoteList(userId);
+                IPage<TNoteLike> page4 = new Page<>(pageNo, 10);
+                IPage<TNoteLike> page5 = tNoteLikeService.page(page4, tNoteLikeLambdaQueryWrapper);
+                List<TNoteLike> noteLikes = page5.getRecords();
+                List<Long> noteIdContentLikeUuids = noteLikes.stream().map(TNoteLike::getNoteId).toList();
+                List<TNote> noteLike = tNoteService.lambdaQuery()
+                        .eq(TNote::getStatus, 1)
+                        .eq(TNote::getVisible, 0)
+                        .in(TNote::getId, noteIdContentLikeUuids).list();
+                //获取笔记id集合
+                List<Long> noteIdContentLikeUuids2 = noteLike.stream().map(TNote::getId).toList();
+                //笔记UUID集合
+                List<String> noteIdContentLikeUuids3 = noteLike.stream().map(TNote::getContentUuid).toList();
+                //获取笔记内容和笔记ID对应表
+                Map<Long, String> noteIdContentLikeUuidMap = tNoteService.listByIds(noteIdContentLikeUuids2).stream().collect(Collectors.toMap(TNote::getId, TNote::getContentUuid));
+                //开始异步任务调取笔记点赞，评论，收藏数量,按照笔记id分组
+                Map<Long, FindNoteCountsByIdRspDTO> countMap3 = startAsyNotesCounts(noteIdContentLikeUuids2);
+                //寻找笔记内容
+                Map<String, String> contentMap3 = startAsyNotesContent(noteIdContentLikeUuids3);
+                noteLike.forEach(record -> {
+                    NotePageInfo notePageInfo = new NotePageInfo();
+                    notePageInfo.setId(record.getId().toString());
+                    notePageInfo.setLikeTotal(countMap3.get(record.getId()).getLikeTotal().intValue());
+                    notePageInfo.setCollectTotal(countMap3.get(record.getId()).getCollectTotal().intValue());
+                    notePageInfo.setCommentTotal(countMap3.get(record.getId()).getCommentTotal().intValue());
+                    notePageInfo.setContent(contentMap3.get(noteIdContentLikeUuidMap.get(record.getId())));
+                    notePageInfo.setTitle(record.getTitle());
+                    if (record.getType() == 0) {
+                        notePageInfo.setType(0);
+                        notePageInfo.setCover(record.getImgUris().split(",")[0]);
+                    } else {
+                        notePageInfo.setType(1);
+                        notePageInfo.setVideoUri(record.getVideoUri());
+                    }
+                    result.add(notePageInfo);
+                });
+                break;
+            default:
+                throw new BizException(ResponseCodeEnum.PARAM_NOT_VALID);
+        }
+        //开始给每个结果赋值上作者的基本信息
+
+        if (result.isEmpty()) {
+            return PageResponse.success(new ArrayList<>(), pageNo, 0);
+        } else {
+            result.forEach(sign -> {
+                sign.setCreatorId(findUserByIdRspDTO.getId().toString());
+                sign.setNickname(findUserByIdRspDTO.getNickName());
+                sign.setAvatar(findUserByIdRspDTO.getAvatar());
+            });
+            return PageResponse.success(result, pageNo, result.size());
+        }
+    }
+
+    @Override
+    public R<FindNoteIsLikedAndCollectedRspVO> isLikedAndCollectedData(FindNoteIsLikedAndCollectedReqVO findNoteIsLikedAndCollectedReqVO) throws BizException {
+        Long noteId = findNoteIsLikedAndCollectedReqVO.getNoteId();
+        Long userId = LoginUserContextHolder.getUserId();
+        //查询用户是否有点赞
+        //优先判断笔记是否被点赞过
+        boolean isLiked = handleLikedNote(noteId, userId);
+        boolean isCollected = handleCollectNote(noteId, userId);
+        //判断笔记是否被收藏过
+        FindNoteIsLikedAndCollectedRspVO findNoteIsLikedAndCollectedRspVO = FindNoteIsLikedAndCollectedRspVO.builder()
+                .noteId(noteId)
+                .isLiked(isLiked)
+                .isCollected(isCollected)
+                .build();
+
+        return R.success(findNoteIsLikedAndCollectedRspVO);
+    }
+
+    @Override
+    @SneakyThrows
+    public PageResponse<List<NoteVO>> showNotesInfoOnDiscoverPage(ChannelPageRequest channelPageRequest) {
+        //获取频道id
+        Long channelId = Long.parseLong(channelPageRequest.getChannelId());
+        //判断是否存在
+        TChannel one = tChannelService.lambdaQuery().eq(TChannel::getId, channelId).one();
+        if (one == null) {
+            throw new BizException(ResponseCodeEnum.CHANNEL_NOT_FOUND);
+        }
+        //获取页码
+        Integer pageNo = channelPageRequest.getPageNo();
+        if (pageNo == null) {
+            pageNo = 1;
+        }
+        //查询对应的数据
+        //todo
+        return null;
+    }
+
+    private boolean handleCollectNote(Long noteId, Long userId) throws BizException {
+        Long result = checkNoteExist(noteId, userId);
+        switch (result.intValue()) {
+            case 1:
+                //用户收藏过
+                return true;
+            case 0:
+                //用户没有收藏过
+                return false;
+            case -1:
+                //bloom过滤器不存在
+                CompletableFuture.runAsync(() -> {
+                    //开启异步初始化bloom
+                    //构建rediskey
+                    String bloomUserNoteCollectListKey = RedisKeyConstants.buildBloomUserNoteCollectListKey(userId);
+                    InitCollectBloomFilter(bloomUserNoteCollectListKey, userId, 60 * 60 * 24 + RandomUtil.randomInt(60 * 60 * 24));
+                });
+                TNoteCollection one = tNoteCollectService.lambdaQuery()
+                        .eq(TNoteCollection::getUserId, userId)
+                        .eq(TNoteCollection::getNoteId, noteId)
+                        .eq(TNoteCollection::getStatus, 1).one();
+                if (one != null) {
+                    //用户收藏过
+                    return true;
+                } else {
+                    return false;
+                }
+            default:
+                throw new BizException(ResponseCodeEnum.SYSTEM_ERROR);
+        }
+    }
+
+    private boolean handleLikedNote(Long noteId, Long userId) throws BizException {
+        Long result = checkNoteIsExist(noteId, userId);
+        switch (result.intValue()) {
+            case 1:
+                //用户点赞过
+                return true;
+            case 0:
+                //用户没有点赞过
+                return false;
+            case -1:
+                //bloom过滤器不存在
+                CompletableFuture.runAsync(() -> {
+                    //开启异步初始化bloom
+                    //构建rediskey
+                    String bloomUserNoteLikeListKey = RedisKeyConstants.buildBloomUserNoteLikeListKey(userId);
+                    InitUserNoteLikeZSet(bloomUserNoteLikeListKey, userId, 60 * 60 * 24 + RandomUtil.randomInt(60 * 60 * 24));
+                });
+                TNoteLike one = tNoteLikeService.lambdaQuery()
+                        .eq(TNoteLike::getNoteId, noteId)
+                        .eq(TNoteLike::getUserId, userId)
+                        .eq(TNoteLike::getStatus, 1).one();
+                if (one != null) {
+                    //用户点赞过
+                    return true;
+                } else {
+                    return false;
+                }
+            default:
+                throw new BizException(ResponseCodeEnum.SYSTEM_ERROR);
+        }
+    }
+
+    private Map<String, String> startAsyNotesContent(List<String> noteIds) {
+        List<FindNoteContentRspDTO> noteContents = keyValueRpcService.findNoteContents(noteIds);
+        Map<String, String> contentMap = new HashMap<>();
+        noteContents.forEach(sign -> {
+            contentMap.put(sign.getNoteId().toString(), sign.getContent());
+        });
+        return contentMap;
+    }
+
+    private Map<Long, FindNoteCountsByIdRspDTO> startAsyNotesCounts(List<Long> noteIds) throws BizException {
+        //开启远程调用
+        List<FindNoteCountsByIdRspDTO> notesCountData = countRpcService.findNotesCountData(noteIds);
+        return notesCountData.stream().collect(Collectors.toMap(FindNoteCountsByIdRspDTO::getNoteId, p -> p));
+    }
+
+    private LambdaQueryWrapper<TNoteLike> handleLikeNoteList(Long userId) {
+        LambdaQueryWrapper<TNoteLike> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(TNoteLike::getUserId, userId)
+                .eq(TNoteLike::getStatus, 1)
+                .orderByDesc(TNoteLike::getCreateTime);
+        return queryWrapper;
+    }
+
+    private LambdaQueryWrapper<TNoteCollection> handleCollectNoteList(Long userId) {
+        LambdaQueryWrapper<TNoteCollection> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(TNoteCollection::getUserId, userId)
+                .eq(TNoteCollection::getStatus, 1)
+                .orderByDesc(TNoteCollection::getCreateTime);
+        return queryWrapper;
+    }
+
+    private LambdaQueryWrapper<TNote> handlePublishedNoteList(Long userId) {
+        LambdaQueryWrapper<TNote> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(TNote::getCreatorId, userId)
+                .orderByDesc(TNote::getCreateTime);
+        return queryWrapper;
+
     }
 
     private Long checkNoteIsExist(Long noteId, Long userId) throws BizException {

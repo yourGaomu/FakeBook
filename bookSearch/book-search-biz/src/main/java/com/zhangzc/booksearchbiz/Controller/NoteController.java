@@ -21,7 +21,7 @@ public class NoteController {
 
     private  final NoteService noteService;
 
-    @PostMapping("/note")
+    @PostMapping("/search/note")
     @ApiOperationLog(description = "搜索笔记")
     public PageResponse<SearchNoteRspVO> searchNote(@RequestBody SearchNoteReqVO searchNoteReqVO) {
         return noteService.searchNote(searchNoteReqVO);

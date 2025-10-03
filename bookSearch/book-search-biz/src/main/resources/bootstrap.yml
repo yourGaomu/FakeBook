@@ -16,18 +16,23 @@ spring:
         password: nacos
         file-extension: yaml
         extension-configs:
+          - data-id: book_SearchApi.yaml
+            group: mysql
+            refresh: true  # 支持动态刷新
+          - data-id: book_Es.yaml
+            group: ElasticSearch
+            refresh: true
+          - data-id: book_Canal.yaml
+            group: Canal
+            refresh: true
           - data-id: book_Redis.yaml
             group: redis
             refresh: true
-
-
 
   # 导入主配置文件（应用名.yaml）
   config:
     import:
       - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?group=DEFAULT_GROUP&namespace=${spring.cloud.nacos.config.namespace}
-
-
 
 logging:
   level:

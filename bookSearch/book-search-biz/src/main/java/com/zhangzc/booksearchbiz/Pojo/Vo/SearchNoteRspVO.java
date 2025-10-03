@@ -14,12 +14,7 @@ import org.dromara.easyes.annotation.rely.IdType;
 
 import java.time.LocalDateTime;
 
-/**
- * @author: 犬小哈
- * @date: 2024/4/7 15:17
- * @version: v1.0.0
- * @description: 搜索笔记
- **/
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

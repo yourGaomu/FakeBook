@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/kv")
 @RequiredArgsConstructor
@@ -30,13 +32,18 @@ public class NoteContentController {
     }
 
     @PostMapping(value = "/note/content/find")
-    public R<FindNoteContentRspDTO> findNoteContent(@Validated @RequestBody FindNoteContentReqDTO findNoteContentReqDTO) {
+    public R<FindNoteContentRspDTO> findNoteContent(@RequestBody FindNoteContentReqDTO findNoteContentReqDTO) {
         return noteContentService.findNoteContent(findNoteContentReqDTO);
     }
 
     @PostMapping(value = "/note/content/delete")
     public R deleteNoteContent(@RequestBody DeleteNoteContentReqDTO deleteNoteContentReqDTO) {
         return noteContentService.deleteNoteContent(deleteNoteContentReqDTO);
+    }
+
+    @PostMapping(value = "/note/content/finds")
+    public R<List<FindNoteContentRspDTO>> findNoteContents(@RequestBody List<FindNoteContentReqDTO> addNoteContentReqDTO) {
+        return noteContentService.findNoteContents(addNoteContentReqDTO);
     }
 }
 

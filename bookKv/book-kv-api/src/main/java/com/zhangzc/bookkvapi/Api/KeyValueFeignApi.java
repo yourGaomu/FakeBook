@@ -12,6 +12,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.List;
+
 @FeignClient(name = ApiConstants.SERVICE_NAME)
 public interface KeyValueFeignApi {
 
@@ -24,6 +26,10 @@ public interface KeyValueFeignApi {
     R<FindNoteContentRspDTO> findNoteContent(@Validated @RequestBody FindNoteContentReqDTO findNoteContentReqDTO);
 
     @PostMapping(value = "/note/content/delete")
-     R deleteNoteContent(@RequestBody DeleteNoteContentReqDTO deleteNoteContentReqDTO);
+    R deleteNoteContent(@RequestBody DeleteNoteContentReqDTO deleteNoteContentReqDTO);
+
+
+    @PostMapping(value =PREFIX + "/note/content/finds")
+    R<List<FindNoteContentRspDTO>> findNoteContents(@RequestBody List<FindNoteContentReqDTO> addNoteContentReqDT);
 }
 
