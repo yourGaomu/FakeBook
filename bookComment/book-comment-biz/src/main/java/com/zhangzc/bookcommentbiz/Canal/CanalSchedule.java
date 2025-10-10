@@ -1,14 +1,12 @@
 package com.zhangzc.bookcommentbiz.Canal;
 
 
-import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.protocol.Message;
 import com.google.common.collect.Maps;
 import com.zhangzc.bookcommentbiz.Pojo.Domain.TComment;
 import com.zhangzc.bookcommentbiz.Pojo.Vo.ValueAndFlagVo;
-import com.zhangzc.bookcommentbiz.Service.CommentService;
 import com.zhangzc.bookcommentbiz.Service.TCommentService;
 import com.zhangzc.bookcommentbiz.Utils.HeatCalculator;
 import lombok.RequiredArgsConstructor;

@@ -2,13 +2,8 @@ package com.zhangzc.bookcommentbiz.Utils;
 
 
 import com.zhangzc.bookcommentbiz.Pojo.Dto.PublishCommentMqDTO;
-import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
