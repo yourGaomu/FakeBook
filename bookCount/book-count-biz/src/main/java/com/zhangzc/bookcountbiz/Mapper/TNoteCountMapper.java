@@ -2,7 +2,11 @@ package com.zhangzc.bookcountbiz.Mapper;
 
 import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCount;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.zhangzc.bookcountbiz.Pojo.Dto.CountPublishCommentMqDTO;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+import java.util.Map;
 
 /**
 * @author 吃饭
@@ -13,6 +17,7 @@ import org.apache.ibatis.annotations.Param;
 public interface TNoteCountMapper extends BaseMapper<TNoteCount> {
     void incrementLikeTotal(@Param("noteId") Long noteId, @Param("count") int count);
 
+    void insertOrUpdateCommentTotalByNoteId(@Param("countPublishCommentMqDTOS") Map<Long, Long> countPublishCommentMqDTOS);
 }
 
 

@@ -2,7 +2,9 @@ package com.zhangzc.bookcountbiz.Service;
 
 import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCount;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.zhangzc.bookcountbiz.Pojo.Dto.CountPublishCommentMqDTO;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,4 +15,5 @@ import java.util.Map;
 public interface TNoteCountService extends IService<TNoteCount> {
     void incrementLikeTotal(Long noteId, int total);
 
+    void insertOrUpdateCommentTotalByNoteId(Map<Long, Long> countPublishCommentMqDTOS);
 }

@@ -3,10 +3,12 @@ package com.zhangzc.bookcountbiz.Service.impl;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCount;
+import com.zhangzc.bookcountbiz.Pojo.Dto.CountPublishCommentMqDTO;
 import com.zhangzc.bookcountbiz.Service.TNoteCountService;
 import com.zhangzc.bookcountbiz.Mapper.TNoteCountMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -76,6 +78,14 @@ public class TNoteCountServiceImpl extends ServiceImpl<TNoteCountMapper, TNoteCo
     @Override
     public void incrementLikeTotal(Long noteId, int total) {
         this.baseMapper.incrementLikeTotal(noteId,total);
+    }
+
+    @Override
+    public void insertOrUpdateCommentTotalByNoteId(Map<Long, Long> countPublishCommentMqDTOS) {
+        if (countPublishCommentMqDTOS == null || countPublishCommentMqDTOS.isEmpty()) {
+            return;
+        }
+        this.baseMapper.insertOrUpdateCommentTotalByNoteId(countPublishCommentMqDTOS);
     }
 
 }

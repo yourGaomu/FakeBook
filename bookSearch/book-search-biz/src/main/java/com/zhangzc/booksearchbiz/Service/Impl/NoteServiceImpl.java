@@ -102,4 +102,23 @@ public class NoteServiceImpl implements NoteService {
         List<SearchNoteRspVO> list = searchNoteRspVOEsPageInfo.getList();
         return PageResponse.success(list, pageNo, total);
     }
+
+    @Override
+    public PageResponse<SearchNoteRspVO> searchNotes(SearchNoteReqVO searchNoteReqVO) {
+        //这是首页排序
+        Integer pageNo = searchNoteReqVO.getPageNo();
+        LambdaEsQueryWrapper<SearchNoteRspVO> wrapper = new LambdaEsQueryWrapper<>();
+        wrapper.gt(SearchNoteRspVO::getLikeTotal, -1, 0.5F)
+                .gt(SearchNoteRspVO::getCollectTotal, -1, 0.2F)
+                .gt(SearchNoteRspVO::getCommentTotal, -1, 0.3F)
+                //按照评分来排序
+                .sortByScore();
+        EsPageInfo<SearchNoteRspVO> searchNoteRspVOEsPageInfo = searchNoteMapper.pageQuery(wrapper, pageNo, 10);
+        Long total = searchNoteRspVOEsPageInfo.getTotal();
+        if (total == 0) {
+            return PageResponse.success(null, 1, 0);
+        }
+        List<SearchNoteRspVO> list = searchNoteRspVOEsPageInfo.getList();
+        return PageResponse.success(list, pageNo, total);
+    }
 }

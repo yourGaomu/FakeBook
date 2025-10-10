@@ -17,6 +17,7 @@ import org.dromara.easyes.core.conditions.select.LambdaEsQueryWrapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -135,11 +136,24 @@ public class CanalSchedule implements Runnable {
      */
     private void processEvent(Map<String, ValueAndFlagVo> columnMap, String table, CanalEntry.EventType eventType) throws Exception {
         switch (table) {
+            case "t_comment_like" -> handleCommentEvent(columnMap, eventType);//评论表
             case "t_note" -> handleNoteEvent(columnMap, eventType); // 笔记表
             case "t_user" -> handleUserEvent(columnMap, eventType); // 用户表
             case "t_user_count" -> handleUserCountEvent(columnMap, eventType); // 用户计数表
             case "t_note_count" -> handleNoteCountEvent(columnMap, eventType); // 笔记计数表
             default -> log.warn("Table: {} not support", table);
+        }
+    }
+
+    private void handleCommentEvent(Map<String, ValueAndFlagVo> columnMap, CanalEntry.EventType eventType) {
+        //当该表进行更新操作时，更新其热力值
+        switch (eventType) {
+            case UPDATE -> {
+                //更新热力值
+                Long commentId = Long.parseLong(columnMap.get("comment_id").getValue().toString());
+                //查询这个评论的一级评论
+                searchNoteMapper.updateHeatByCommentId(commentId, heat);
+            }
         }
     }
 

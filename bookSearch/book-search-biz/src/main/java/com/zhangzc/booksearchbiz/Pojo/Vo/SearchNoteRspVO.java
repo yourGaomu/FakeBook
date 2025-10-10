@@ -27,9 +27,6 @@ public class SearchNoteRspVO {
      */
     @IndexId(type = IdType.CUSTOMIZE)
     //IdType.CUSTOMIZE: 由用户自定义
-    // ,用户自己对id值进行set,如果用户指定的id在es中不存在
-    // ,则在insert时就会新增一条记录
-    // ,如果用户指定的id在es中已存在记录,则自动更新该id对应的记录
     private Long noteId;
 
     /**

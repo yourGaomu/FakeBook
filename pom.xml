@@ -25,6 +25,7 @@
         <module>bookRelation</module>
         <module>bookCount</module>
         <module>bookAI</module>
+        <module>bookComment</module>
     </modules>
 
     <properties>

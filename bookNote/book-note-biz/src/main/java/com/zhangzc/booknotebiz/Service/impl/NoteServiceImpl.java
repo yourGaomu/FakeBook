@@ -26,15 +26,14 @@ import com.zhangzc.booknotebiz.Pojo.Dto.CollectUnCollectNoteMqDTO;
 import com.zhangzc.booknotebiz.Pojo.Dto.LikeUnlikeNoteMqDTO;
 import com.zhangzc.booknotebiz.Pojo.Dto.PublishNoteMqDTO;
 import com.zhangzc.booknotebiz.Pojo.Vo.*;
-import com.zhangzc.booknotebiz.Rpc.CountRpcService;
-import com.zhangzc.booknotebiz.Rpc.DistributedIdGeneratorRpcService;
-import com.zhangzc.booknotebiz.Rpc.KeyValueRpcService;
-import com.zhangzc.booknotebiz.Rpc.UserRpcService;
+import com.zhangzc.booknotebiz.Rpc.*;
 import com.zhangzc.booknotebiz.Service.*;
 import com.zhangzc.booknotebiz.Utils.DateUtils;
 import com.zhangzc.booknotebiz.Utils.RabbitMqUtil;
 import com.zhangzc.booknotebiz.Utils.RedisHashExample;
 import com.zhangzc.booknotebiz.Utils.RedisUtil;
+import com.zhangzc.booksearchapi.Pojo.Dto.Req.SearchNoteReqVO;
+import com.zhangzc.booksearchapi.Pojo.Dto.Resp.SearchNoteRspVO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.fakebookspringbootstartcontext.Const.LoginUserContextHolder;
 import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
@@ -66,6 +65,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 @Slf4j
 public class NoteServiceImpl implements NoteService {
 
+    private final SearchRpcService searchRpcService;
     private final DistributedIdGeneratorRpcService distributedIdGeneratorRpcService;
     private final CountRpcService countRpcService;
     private final UserRpcService userRpcService;
@@ -86,6 +86,7 @@ public class NoteServiceImpl implements NoteService {
 
     // 手动编写构造函数，为线程池参数添加 @Qualifier
     public NoteServiceImpl(
+            SearchRpcService searchRpcService,
             CountRpcService countRpcService,
             TChannelTopicRelService tChannelTopicRelService,
             TChannelService tChannelService,
@@ -104,6 +105,7 @@ public class NoteServiceImpl implements NoteService {
             TNoteLikeService tNoteLikeService,
             TNoteCollectionService tNoteCollectionService
     ) {
+        this.searchRpcService = searchRpcService;
         this.countRpcService = countRpcService;
         this.tChannelTopicRelService = tChannelTopicRelService;
         this.tChannelService = tChannelService;
@@ -1291,7 +1293,20 @@ public class NoteServiceImpl implements NoteService {
             pageNo = 1;
         }
         //查询对应的数据
-        //todo
+        List<SearchNoteRspVO> searchNoteRspVOS = searchRpcService.searchNote(SearchNoteReqVO.builder().pageNo(pageNo).build());
+        List<NoteVO> noteVOS = searchNoteRspVOS.stream().map(record -> {
+            NoteVO noteVO = new NoteVO();
+            noteVO.setId(record.getNoteId());
+            noteVO.setContent(record.getTitle());
+            noteVO.setCreateTime(record.getUpdateTime());
+            noteVO.setLikeCount(record.getLikeTotal().intValue());
+            noteVO.setCommentCount(record.getCommentTotal().intValue());
+            noteVO.setIsLiked(false);
+            noteVO.setIsCollected(false);
+            return noteVO;
+        }).toList();
+        //后续优化，现在目前就按照点赞，收藏来排序
+
         return null;
     }
 

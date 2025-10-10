@@ -27,4 +27,10 @@ public class NoteController {
         return noteService.searchNote(searchNoteReqVO);
     }
 
+    @PostMapping("/search/notes")
+    @ApiOperationLog(description = "首页展示笔记")
+    public PageResponse<SearchNoteRspVO> searchNotes(@RequestBody SearchNoteReqVO searchNoteReqVO) {
+        return noteService.searchNotes(searchNoteReqVO);
+    }
+
 }

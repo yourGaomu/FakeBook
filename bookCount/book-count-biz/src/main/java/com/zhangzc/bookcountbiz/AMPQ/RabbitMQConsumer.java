@@ -17,6 +17,7 @@ import com.zhangzc.bookcountbiz.Enum.ResponseCodeEnum;
 import com.zhangzc.bookcountbiz.Pojo.Domain.TNoteCount;
 import com.zhangzc.bookcountbiz.Pojo.Domain.TUserCount;
 import com.zhangzc.bookcountbiz.Pojo.Dto.CollectUnCollectNoteMqDTO;
+import com.zhangzc.bookcountbiz.Pojo.Dto.CountPublishCommentMqDTO;
 import com.zhangzc.bookcountbiz.Pojo.Dto.PublishNoteMqDTO;
 import com.zhangzc.bookcountbiz.Pojo.Vo.CountFollowUnfollowMqDTO;
 import com.zhangzc.bookcountbiz.Rpc.NoteRpcService;
@@ -113,6 +114,33 @@ public class RabbitMQConsumer {
     private final TNoteCountService tNoteCountService;
 
 
+    @RabbitListener(queues = "count.NoteCommentCountqueue")
+    public void consumeNoteCommentCountMessage(String message) {
+        //令牌阻塞
+        rateLimiter.acquire();
+        //序列化
+        if (message == null || message.isEmpty()) {
+            return;
+        }
+        List<CountPublishCommentMqDTO> countPublishCommentMqDTOS = JsonUtils.parseList(message
+                , new TypeReference<List<CountPublishCommentMqDTO>>() {
+                });
+        //按照笔记id分组，并且有多少条评论
+        Map<Long, Long> noteIdCommentCountMap = new HashMap<>();
+        countPublishCommentMqDTOS.stream().collect(Collectors.groupingBy(CountPublishCommentMqDTO::getNoteId))
+                .forEach((k, v) -> {
+                    if (v.size() >= 1) {
+                        noteIdCommentCountMap.put(k, (long) v.size());
+                    }
+                });
+        //开始入库
+        if (noteIdCommentCountMap.isEmpty()) {
+            return;
+        }
+        tNoteCountService.insertOrUpdateCommentTotalByNoteId(noteIdCommentCountMap);
+    }
+
+
     @RabbitListener(queues = "count.UserNotePulishqueue")
     public void consumeUserPublishCountMessage(String message) {
 
@@ -123,7 +151,6 @@ public class RabbitMQConsumer {
 
     @RabbitListener(queues = "count.UserCollectionqueue")
     public void consumeUserCollectionMessage(String message) {
-        //使用令牌
         log.info("开始处理用户收藏的消息");
         //开始序列化
         try {
@@ -317,5 +344,13 @@ public class RabbitMQConsumer {
             key = MQConstants.TAG_USER_NOTE_PUBLISH
     ))
     public void consumeCountMessage5(String message) {
+    }
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "count.NoteCommentCountqueue"),
+            exchange = @Exchange(name = "count.exchange", type = ExchangeTypes.TOPIC),
+            key = MQConstants.TOPIC_COUNT_NOTE_COMMENT
+    ))
+    public void consumeCountMessage6(String message) {
     }
 }
