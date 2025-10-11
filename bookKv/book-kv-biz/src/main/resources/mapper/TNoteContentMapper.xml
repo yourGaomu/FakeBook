@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhangzc.bookkvbiz.Mapper.TNoteContentMapper">
+
+    <resultMap id="BaseResultMap" type="com.zhangzc.bookkvbiz.Pojo.Domain.TNoteContent">
+            <id property="id" column="id" jdbcType="CHAR"/>
+            <result property="content" column="content" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,content
+    </sql>
+</mapper>

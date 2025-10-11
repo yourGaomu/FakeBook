@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhangzc.booknotebiz.Mapper.TNoteMapper">
+
+    <resultMap id="BaseResultMap" type="com.zhangzc.booknotebiz.Pojo.Domain.TNote">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="isContentEmpty" column="is_content_empty" jdbcType="BIT"/>
+            <result property="creatorId" column="creator_id" jdbcType="BIGINT"/>
+            <result property="topicId" column="topic_id" jdbcType="BIGINT"/>
+            <result property="topicName" column="topic_name" jdbcType="VARCHAR"/>
+            <result property="isTop" column="is_top" jdbcType="BIT"/>
+            <result property="type" column="type" jdbcType="TINYINT"/>
+            <result property="imgUris" column="img_uris" jdbcType="VARCHAR"/>
+            <result property="videoUri" column="video_uri" jdbcType="VARCHAR"/>
+            <result property="visible" column="visible" jdbcType="TINYINT"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="contentUuid" column="content_uuid" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,title,is_content_empty,
+        creator_id,topic_id,topic_name,
+        is_top,type,img_uris,
+        video_uri,visible,create_time,
+        update_time,status,content_uuid
+    </sql>
+
+    <select id="selectPublishedNoteListByUserIdAndCursor" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from t_note
+        where creator_id = #{userId} and visible = 0 and status = 1
+        <if test="cursor != null">
+            <![CDATA[ and id < #{cursor} ]]>
+        </if>
+        order by id desc
+        limit 20
+    </select>
+
+</mapper>

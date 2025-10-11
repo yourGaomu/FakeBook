@@ -6,6 +6,22 @@ import java.util.Date;
 
 public class TimeUtil {
 
+    // 线程安全的日期格式化器
+    private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
+
+    /**
+     * 将Date转换为yyyy-MM格式的字符串
+     * @param date 输入日期
+     * @return 格式化后的年月字符串，null则返回null
+     */
+    public static String formatToYearMonth(Date date) {
+        if (date == null) {
+            return null;
+        }
+        return getLocalDate(date).format(YEAR_MONTH_FORMATTER);
+    }
+
+
     private static final DateTimeFormatter FULL_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 

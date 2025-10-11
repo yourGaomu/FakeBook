@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhangzc.bookkvbiz.Mapper.CommentContentMapper">
+
+    <resultMap id="BaseResultMap" type="com.zhangzc.bookkvbiz.Pojo.Domain.CommentContent">
+            <id property="contentId" column="content_id" jdbcType="CHAR"/>
+            <result property="noteId" column="note_id" jdbcType="BIGINT"/>
+            <result property="yearMonth" column="year_month" jdbcType="VARCHAR"/>
+            <result property="content" column="content" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 1. 首先修正 Base_Column_List 片段，给 year_month 加反引号 -->
+    <sql id="Base_Column_List">
+        content_id,
+        note_id,
+        `year_month`,  <!-- 关键：必须加反引号 -->
+        content
+    </sql>
+
+
+    <select id="batchFindCommentContent" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>  <!-- 引用已处理的字段列表 -->
+        FROM
+        comment_content cc
+        WHERE
+        cc.note_id = #{noteId}
+        AND cc.`year_month` IN  <!-- 关键：这里也需要加反引号 -->
+        <foreach item="yearMonth" index="index" collection="yearMonths" open="(" separator="," close=")">
+            #{yearMonth}
+        </foreach>
+        AND cc.content_id IN
+        <foreach item="contentId" index="index" collection="contentIds" open="(" separator="," close=")">
+            #{contentId}
+        </foreach>
+    </select>
+
+
+
+</mapper>

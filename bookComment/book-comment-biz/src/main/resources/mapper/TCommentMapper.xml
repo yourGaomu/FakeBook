@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhangzc.bookcommentbiz.Mapper.TCommentMapper">
+
+    <resultMap id="BaseResultMap" type="com.zhangzc.bookcommentbiz.Pojo.Domain.TComment">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="noteId" column="note_id" jdbcType="BIGINT"/>
+            <result property="userId" column="user_id" jdbcType="BIGINT"/>
+            <result property="contentUuid" column="content_uuid" jdbcType="VARCHAR"/>
+            <result property="isContentEmpty" column="is_content_empty" jdbcType="BIT"/>
+            <result property="imageUrl" column="image_url" jdbcType="VARCHAR"/>
+            <result property="level" column="level" jdbcType="TINYINT"/>
+            <result property="replyTotal" column="reply_total" jdbcType="BIGINT"/>
+            <result property="likeTotal" column="like_total" jdbcType="BIGINT"/>
+            <result property="parentId" column="parent_id" jdbcType="BIGINT"/>
+            <result property="replyCommentId" column="reply_comment_id" jdbcType="BIGINT"/>
+            <result property="replyUserId" column="reply_user_id" jdbcType="BIGINT"/>
+            <result property="isTop" column="is_top" jdbcType="TINYINT"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="childCommentTotal" column="child_comment_total" jdbcType="BIGINT"/>
+            <result property="heat" column="heat" jdbcType="DECIMAL"/>
+            <result property="firstReplyCommentId" column="first_reply_comment_id" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,note_id,user_id,
+        content_uuid,is_content_empty,image_url,
+        level,reply_total,like_total,
+        parent_id,reply_comment_id,reply_user_id,
+        is_top,create_time,update_time,
+        child_comment_total,heat,first_reply_comment_id
+    </sql>
+
+    <update id="updateChindCommentTotal">
+        update t_comment
+        set child_comment_total = case id
+        <!-- 遍历 Map，对每个一级评论ID累加对应数量 -->
+        <foreach collection="parentCommentMap" item="entry" separator=" ">
+            when #{entry.key} then child_comment_total + #{entry.value}
+        </foreach>
+        <!-- 其他ID不更新，避免全表扫描 -->
+        else child_comment_total
+        end
+        where id in
+        <foreach collection="parentCommentMap.keys" item="key" open="(" separator="," close=")">
+            #{key}
+        </foreach>
+    </update>
+
+    <update id="updateFirstReplyCommentId">
+        <if test="replyIdMap != null and !replyIdMap.isEmpty()">
+            update t_comment
+            set first_reply_comment_id = case
+            <foreach collection="replyIdMap" item="entry" separator=" ">
+                when first_reply_comment_id is null and id = #{entry.key} then #{entry.value}
+            </foreach>
+            else first_reply_comment_id
+            end
+            where id in
+            <foreach collection="replyIdMap.keys" item="key" open="(" separator="," close=")">
+                #{key}
+            </foreach>
+            and first_reply_comment_id is null
+        </if>
+    </update>
+
+</mapper>

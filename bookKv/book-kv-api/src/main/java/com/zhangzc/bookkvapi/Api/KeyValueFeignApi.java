@@ -4,9 +4,12 @@ package com.zhangzc.bookkvapi.Api;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookkvapi.Const.ApiConstants;
 import com.zhangzc.bookkvapi.Pojo.Dto.Req.AddNoteContentReqDTO;
+import com.zhangzc.bookkvapi.Pojo.Dto.Req.BatchFindCommentContentReqDTO;
 import com.zhangzc.bookkvapi.Pojo.Dto.Req.DeleteNoteContentReqDTO;
 import com.zhangzc.bookkvapi.Pojo.Dto.Req.FindNoteContentReqDTO;
+import com.zhangzc.bookkvapi.Pojo.Dto.Resp.FindCommentContentRspDTO;
 import com.zhangzc.bookkvapi.Pojo.Dto.Resp.FindNoteContentRspDTO;
+import org.springframework.cloud.client.loadbalancer.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,5 +34,8 @@ public interface KeyValueFeignApi {
 
     @PostMapping(value =PREFIX + "/note/content/finds")
     R<List<FindNoteContentRspDTO>> findNoteContents(@RequestBody List<FindNoteContentReqDTO> addNoteContentReqDT);
+
+    @PostMapping(value = PREFIX + "/comment/content/batchFind")
+    R<List<FindCommentContentRspDTO>> batchFindCommentContent(@RequestBody BatchFindCommentContentReqDTO batchFindCommentContentReqDTO);
 }
 

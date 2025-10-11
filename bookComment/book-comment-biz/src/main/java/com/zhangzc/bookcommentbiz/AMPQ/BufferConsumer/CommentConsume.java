@@ -56,8 +56,9 @@ public class CommentConsume {
             return;
         }
         //开始转换
-        List<PublishCommentMqDTO> publishCommentMqDTOS = JsonUtils.parseList(list1.toString(), new TypeReference<List<PublishCommentMqDTO>>() {
-        });
+        List<PublishCommentMqDTO> publishCommentMqDTOS = JsonUtils.parseList(list1.toString()
+                , new TypeReference<List<PublishCommentMqDTO>>() {
+                });
         //存入评论内容数据库
         List<CommentContent> commentContents = publishCommentMqDTOS.stream().map(publishCommentMqDTO -> {
             CommentContent commentContent = new CommentContent();
@@ -86,11 +87,19 @@ public class CommentConsume {
 
         //获取被回复的评论id
         List<Long> replyIds = publishCommentMqDTOS.stream().map(PublishCommentMqDTO::getReplyCommentId).toList();
+        //获取笔记ID
+        List<Long> noteIds = publishCommentMqDTOS.stream().map(PublishCommentMqDTO::getNoteId).toList();
+        Map<Long, TComment> collect = new HashMap<>();
         //获取被回复的评论
-        Map<Long, TComment> collect = tCommentService.lambdaQuery().in(TComment::getId, replyIds).list()
-                .stream().collect(Collectors.toMap(TComment::getId, p -> p));
-
+        if (replyIds.isEmpty()) {
+            //全是一级评论
+            collect = null;
+        } else {
+            collect = tCommentService.lambdaQuery().in(TComment::getId, replyIds).list()
+                    .stream().collect(Collectors.toMap(TComment::getId, p -> p));
+        }
         //存入评论数据库里面
+        Map<Long, TComment> finalCollect = collect;
         List<TComment> list = publishCommentMqDTOS.stream().map(publishCommentMqDTO -> {
             //是否是一级评论
             boolean isFirstReply = publishCommentMqDTO.getReplyCommentId() == null || publishCommentMqDTO.getReplyCommentId() == 0;
@@ -109,17 +118,20 @@ public class CommentConsume {
                 tComment.setParentId(publishCommentMqDTO.getCommentId());
             } else {
                 //为二级评论
-                tComment.setParentId(collect.get(publishCommentMqDTO.getReplyCommentId()).getParentId() == null
+                tComment.setParentId(IsUUID(finalCollect.get(publishCommentMqDTO.getReplyCommentId()).getParentId())
                         ? publishCommentMqDTO.getReplyCommentId()
-                        : collect.get(publishCommentMqDTO.getReplyCommentId()).getParentId());
+                        : finalCollect.get(publishCommentMqDTO.getReplyCommentId()).getParentId());
             }
             tComment.setReplyCommentId(publishCommentMqDTO.getReplyCommentId());
-            tComment.setReplyUserId(collect.get(publishCommentMqDTO.getReplyCommentId()).getUserId());
+            tComment.setReplyUserId(finalCollect.get(publishCommentMqDTO.getReplyCommentId()) == null
+                    ? 0L
+                    : finalCollect.get(publishCommentMqDTO.getReplyCommentId()).getUserId());
             tComment.setIsTop(0);
             tComment.setCreateTime(TimeUtil.getDateTime(publishCommentMqDTO.getCreateTime()));
             tComment.setUpdateTime(TimeUtil.getDateTime(publishCommentMqDTO.getCreateTime()));
             tComment.setChildCommentTotal(0L);
             tComment.setHeat(BigDecimal.ZERO);
+            tComment.setFirstReplyCommentId(null);
             return tComment;
         }).toList();
         //优先保存评论
@@ -183,7 +195,24 @@ public class CommentConsume {
                 log.error("异步更新回复数失败", e);
             }
         });
+        //设置一级评论的最早回复
+        CompletableFuture.runAsync(() -> {
+            //过滤出非一级评论
+            List<TComment> unfirstComments = list.stream().filter(tComment -> tComment.getLevel() == 2).toList();
+            //得到回复ID对应关系
+            Map<Long, Long> replyIdMap = new HashMap<>();
+            unfirstComments.forEach((k) -> {
+                replyIdMap.put(k.getReplyCommentId(), k.getId());
+            });
+            if (unfirstComments.isEmpty()) {
+                return;
+            }
+            tCommentService.updateFirstReplyCommentId(replyIdMap);
+        });
+    }
 
-
+    private boolean IsUUID(Long parentId) {
+        return parentId.toString().matches("^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$")
+                || parentId.toString().matches("^[0-9a-fA-F]{32}$");
     }
 }

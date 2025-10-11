@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,11 @@ import org.springframework.stereotype.Component;
 public class RabbitMqUtil {
     private final RabbitTemplate rabbitTemplate;
 
+
+
+    public void sendCorrelated(String exchange, String routingKey, String message, CorrelationData correlationId) {
+        rabbitTemplate.convertAndSend(exchange, routingKey, message,correlationId);
+    }
 
 
     /**

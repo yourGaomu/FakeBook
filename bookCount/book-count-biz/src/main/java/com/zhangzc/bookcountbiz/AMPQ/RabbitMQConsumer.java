@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.phantomthief.collection.BufferTrigger;
 import com.google.common.reflect.TypeToken;
+import com.rabbitmq.client.Channel;
 import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcountbiz.AMPQ.BufferConsumer.CountConsumer;
 import com.zhangzc.bookcountbiz.AMPQ.BufferConsumer.CountNoteConsumer;
@@ -33,13 +34,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.ExchangeTypes;
 import com.google.common.util.concurrent.RateLimiter;
 
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +54,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@RestController
 public class RabbitMQConsumer {
 
     private final NoteRpcService rpcService;
@@ -113,11 +118,21 @@ public class RabbitMQConsumer {
     private final RedisTemplate<String, Object> redisTemplate;
     private final TNoteCountService tNoteCountService;
 
+    @RabbitListener(queues = "count.corelated.queue")
+    public void consumeCorrelatedMessage(String json, Message message, Channel channel) throws IOException {
+        log.info("开始处理消息");
+        System.out.println(json);
+        channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+    }
+
+
 
     @RabbitListener(queues = "count.NoteCommentCountqueue")
     public void consumeNoteCommentCountMessage(String message) {
         //令牌阻塞
         rateLimiter.acquire();
+        //开始
+        log.info("开始处理");
         //序列化
         if (message == null || message.isEmpty()) {
             return;
@@ -129,7 +144,7 @@ public class RabbitMQConsumer {
         Map<Long, Long> noteIdCommentCountMap = new HashMap<>();
         countPublishCommentMqDTOS.stream().collect(Collectors.groupingBy(CountPublishCommentMqDTO::getNoteId))
                 .forEach((k, v) -> {
-                    if (v.size() >= 1) {
+                    if (!v.isEmpty()) {
                         noteIdCommentCountMap.put(k, (long) v.size());
                     }
                 });
@@ -353,4 +368,13 @@ public class RabbitMQConsumer {
     ))
     public void consumeCountMessage6(String message) {
     }
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "count.corelated.queue"),
+            exchange = @Exchange(name = "corelated.exchange", type = ExchangeTypes.TOPIC),
+            key = "Correlated"
+    ))
+    public void consumeCountMessage7(String message) {
+    }
+
 }

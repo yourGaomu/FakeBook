@@ -47,13 +47,13 @@ public class CommentServiceImpl implements CommentService {
                 .distinct() // 去重
                 .collect(Collectors.toList());
 
-        // 过滤出评论内容 UUID
-        List<UUID> contentIds = commentContentKeys.stream()
-                .map(commentContentKey -> UUID.fromString(commentContentKey.getContentId()))
+        // 过滤出评论内容ID
+        List<String> contentIds = commentContentKeys.stream()
+                .map(FindCommentContentReqDTO::getContentId)
                 .distinct() // 去重
                 .collect(Collectors.toList());
 
-        // 批量查询 Cassandra
+        // 批量查询
         List<CommentContent> commentContentDOS = commentContentService
                 .findByPrimaryKeyNoteIdAndPrimaryKeyYearMonthInAndPrimaryKeyContentIdIn(noteId, yearMonths, contentIds);
 
