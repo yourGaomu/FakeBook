@@ -38,9 +38,9 @@ public interface NoteService {
 
     R<FindPublishedNoteListRspVO> findPublishedNoteList(FindPublishedNoteListReqVO findPublishedNoteListReqVO) throws BizException, ExecutionException, InterruptedException;
 
-    PageResponse<List<NotePageInfo>> findProfileNoteList(FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException;
+    PageResponse<NotePageInfo> findProfileNoteList(FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException;
 
     R<FindNoteIsLikedAndCollectedRspVO> isLikedAndCollectedData(FindNoteIsLikedAndCollectedReqVO findNoteIsLikedAndCollectedReqVO) throws BizException;
 
-    PageResponse<List<NoteVO>> showNotesInfoOnDiscoverPage(ChannelPageRequest channelPageRequest);
+    PageResponse<NoteVO> showNotesInfoOnDiscoverPage(ChannelPageRequest channelPageRequest);
 }

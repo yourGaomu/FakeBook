@@ -195,7 +195,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.zhangzc.bookdistributedbiz.BookDistributedBizApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

@@ -71,17 +71,6 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
-        <!-- Redis -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
-
-        <!-- Redis 连接池 -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-pool2</artifactId>
-        </dependency>
 
 
         <!-- Druid 数据库连接池 -->
@@ -135,18 +124,7 @@
             <artifactId>book-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <!-- 服务发现 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
 
-
-        <dependency>
-            <groupId>com.zhangzc</groupId>
-            <artifactId>book-common</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -189,7 +167,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.zhangzc.bookrelationbiz.BookRelationBizApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

@@ -9,12 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * @author: zhangzc
- * @date: 2024/4/9 18:19
- * @version: v1.0.0
- * @description: 登录用户上下文
- **/
+
 public class LoginUserContextHolder {
 
     // 初始化一个 ThreadLocal 变量

@@ -9,4 +9,6 @@ public interface NoteService {
     PageResponse<SearchNoteRspVO> searchNote(SearchNoteReqVO searchNoteReqVO);
 
     PageResponse<SearchNoteRspVO> searchNotes(SearchNoteReqVO searchNoteReqVO);
+
+    Boolean syncNote(SearchNoteRspVO searchNoteRspVO);
 }

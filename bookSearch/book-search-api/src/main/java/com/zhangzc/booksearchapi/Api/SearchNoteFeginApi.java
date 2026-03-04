@@ -18,4 +18,7 @@ public interface SearchNoteFeginApi {
 
     @PostMapping(prefix+"/search/note")
     PageResponse<SearchNoteRspVO> searchNote(@RequestBody SearchNoteReqVO searchNoteReqVO);
+
+    @PostMapping(prefix+"/sync/note")
+    Boolean syncNote(@RequestBody SearchNoteRspVO searchNoteRspVO);
 }

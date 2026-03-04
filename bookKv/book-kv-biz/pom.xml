@@ -157,7 +157,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.zhangzc.bookkvbiz.BookKvBizApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

@@ -14,9 +14,23 @@ import java.util.List;
 public class SearchRpcService {
     private final SearchNoteFeginApi searchNoteFeginApi;
 
-    public List<SearchNoteRspVO> searchNote(SearchNoteReqVO searchNoteReqVO) {
+    public PageResponse<SearchNoteRspVO> searchNote(SearchNoteReqVO searchNoteReqVO) {
         PageResponse<SearchNoteRspVO> searchNoteRspVOPageResponse = searchNoteFeginApi.searchNote(searchNoteReqVO);
-        List<SearchNoteRspVO> data = searchNoteRspVOPageResponse.getData();
-        return data;
+        if (searchNoteRspVOPageResponse == null || searchNoteRspVOPageResponse.getData() == null) {
+            return PageResponse.success(List.of(), 1, 0);
+        }
+        return searchNoteRspVOPageResponse;
+    }
+
+    public PageResponse<SearchNoteRspVO> searchNotes(SearchNoteReqVO searchNoteReqVO) {
+        PageResponse<SearchNoteRspVO> searchNoteRspVOPageResponse = searchNoteFeginApi.searchNotes(searchNoteReqVO);
+        if (searchNoteRspVOPageResponse == null || searchNoteRspVOPageResponse.getData() == null) {
+            return PageResponse.success(List.of(), 1, 0);
+        }
+        return searchNoteRspVOPageResponse;
+    }
+
+    public Boolean syncNote(SearchNoteRspVO searchNoteRspVO) {
+        return searchNoteFeginApi.syncNote(searchNoteRspVO);
     }
 }

@@ -3,13 +3,13 @@
 <mapper namespace="com.zhangzc.booksearchbiz.Mapper.Mp.SelectMapper">
 
     <select id="selectEsNoteIndexData" resultType="map" parameterType="map">
-        select n.id as note_id, n.title, n.topic_name as topic, n.type, n.img_uris,
-        DATE_FORMAT(n.create_time, '%Y-%m-%d %H:%i:%s') AS create_time,
-        DATE_FORMAT(n.update_time, '%Y-%m-%d %H:%i:%s') AS update_time,
+        select n.id as noteId, n.title, n.topic_name as topicName, n.channel_id as channelId, n.type, n.img_uris as imgUris,
+        n.create_time,
+        n.update_time as updateTime,
         u.nickname, u.avatar,
-        IFNULL(nc.like_total, 0) as like_total,
-        IFNULL(nc.collect_total, 0) as collect_total,
-        IFNULL(nc.comment_total, 0) as comment_total
+        IFNULL(nc.like_total, 0) as likeTotal,
+        IFNULL(nc.collect_total, 0) as collectTotal,
+        IFNULL(nc.comment_total, 0) as commentTotal
         from t_note n left join t_user u on n.creator_id = u.id
         left join t_note_count nc on n.id = nc.note_id
         where n.visible = 0 and n.`status` = 1

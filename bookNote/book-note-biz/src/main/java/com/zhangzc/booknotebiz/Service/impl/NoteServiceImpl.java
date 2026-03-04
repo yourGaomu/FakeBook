@@ -14,6 +14,7 @@ import com.zhangzc.bookcommon.Utils.PageResponse;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
 import com.zhangzc.bookcountapi.Pojo.Dto.FindNoteCountsByIdRspDTO;
+import com.zhangzc.bookcountapi.Pojo.Dto.Resp.FindUserCountsByIdRspDTO;
 import com.zhangzc.bookkvapi.Pojo.Dto.Resp.FindNoteContentRspDTO;
 import com.zhangzc.booknotebiz.Const.MQConstants;
 import com.zhangzc.booknotebiz.Const.RedisKeyConstants;
@@ -215,6 +216,7 @@ public class NoteServiceImpl implements NoteService {
                 .title(publishNoteReqVO.getTitle())
                 .topicId(publishNoteReqVO.getTopicId())
                 .topicName(topicName)
+                .channelId(publishNoteReqVO.getChannelId())
                 .type(type)
                 .visible(NoteVisibleEnum.PUBLIC.getCode())
                 .createTime(TimeUtil.getDateTime(LocalDate.now()))
@@ -240,6 +242,28 @@ public class NoteServiceImpl implements NoteService {
             if (StringUtils.isNotBlank(contentUuid)) {
                 keyValueRpcService.deleteNoteContent(contentUuid);
             }
+        }
+        //开始同步es
+        //查询用户信息
+        FindUserByIdRspDTO findUserByIdRspDTO = userRpcService.findById(creatorId);
+        //查询用户点赞数
+        FindUserCountsByIdRspDTO findUserCountsByIdRspDTO = countRpcService.findUserCountsByIdRspDTO(creatorId);
+        SearchNoteRspVO searchNoteRspVO = SearchNoteRspVO.builder()
+                .noteId(noteDO.getId())
+                .type(noteDO.getType())
+                .cover(imgUris != null ? imgUris.split(",")[0] : null)
+                .topicName(noteDO.getTopicName())
+                .title(noteDO.getTitle())
+                .avatar(findUserByIdRspDTO.getAvatar())
+                .nickname(findUserByIdRspDTO.getNickName())
+                .updateTime(TimeUtil.getLocalDateTime(noteDO.getUpdateTime()))
+                .likeTotal(0L)
+                .collectTotal(0L)
+                .commentTotal(0L)
+                .build();
+        Boolean b = searchRpcService.syncNote(searchNoteRspVO);
+        if(!b){
+            log.error("同步es失败");
         }
 
         return R.success();
@@ -1101,7 +1125,7 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
-    public PageResponse findProfileNoteList(FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException {
+    public PageResponse<NotePageInfo> findProfileNoteList(FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException {
         //获取用户id
         Long userId = findProfileNoteListReqVO.getUserId();
         if (userId == null) {
@@ -1279,7 +1303,7 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @SneakyThrows
-    public PageResponse<List<NoteVO>> showNotesInfoOnDiscoverPage(ChannelPageRequest channelPageRequest) {
+    public PageResponse<NoteVO> showNotesInfoOnDiscoverPage(ChannelPageRequest channelPageRequest) {
         //获取频道id
         Long channelId = Long.parseLong(channelPageRequest.getChannelId());
         //判断是否存在
@@ -1293,21 +1317,24 @@ public class NoteServiceImpl implements NoteService {
             pageNo = 1;
         }
         //查询对应的数据
-        List<SearchNoteRspVO> searchNoteRspVOS = searchRpcService.searchNote(SearchNoteReqVO.builder().pageNo(pageNo).build());
+        PageResponse<SearchNoteRspVO> searchNoteRspVOPageResponse = searchRpcService.searchNotes(SearchNoteReqVO.builder()
+                .pageNo(pageNo)
+                .channelId(channelId)
+                .build());
+        List<SearchNoteRspVO> searchNoteRspVOS = searchNoteRspVOPageResponse.getData();
         List<NoteVO> noteVOS = searchNoteRspVOS.stream().map(record -> {
             NoteVO noteVO = new NoteVO();
             noteVO.setId(record.getNoteId());
             noteVO.setContent(record.getTitle());
             noteVO.setCreateTime(record.getUpdateTime());
-            noteVO.setLikeCount(record.getLikeTotal().intValue());
-            noteVO.setCommentCount(record.getCommentTotal().intValue());
+            noteVO.setLikeCount(record.getLikeTotal() != null ? record.getLikeTotal().intValue() : 0);
+            noteVO.setCommentCount(record.getCommentTotal() != null ? record.getCommentTotal().intValue() : 0);
             noteVO.setIsLiked(false);
-            noteVO.setIsCollected(false);
             return noteVO;
         }).toList();
         //后续优化，现在目前就按照点赞，收藏来排序
 
-        return null;
+        return PageResponse.success(noteVOS, pageNo, searchNoteRspVOPageResponse.getTotalCount());
     }
 
     private boolean handleCollectNote(Long noteId, Long userId) throws BizException {

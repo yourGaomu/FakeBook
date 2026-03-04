@@ -103,10 +103,7 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-        </dependency>
+        
 
 
         <!-- Druid 数据库连接池 -->
@@ -192,7 +189,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.zhangzc.bookcountbiz.BookCountBizApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

@@ -33,4 +33,10 @@ public class NoteController {
         return noteService.searchNotes(searchNoteReqVO);
     }
 
+    @PostMapping("/sync/note")
+    @ApiOperationLog(description = "同步笔记")
+    public Boolean syncNote(@RequestBody SearchNoteRspVO searchNoteRspVO) {
+        return noteService.syncNote(searchNoteRspVO);
+    }
+
 }

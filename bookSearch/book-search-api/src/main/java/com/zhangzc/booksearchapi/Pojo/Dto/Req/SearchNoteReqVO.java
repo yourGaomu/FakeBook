@@ -32,5 +32,5 @@ public class SearchNoteReqVO {
      */
     private Integer publishTimeRange;
 
-
+    private Long channelId;
 }

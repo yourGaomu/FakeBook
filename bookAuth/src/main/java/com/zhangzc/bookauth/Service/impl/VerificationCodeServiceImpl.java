@@ -39,6 +39,7 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
 
         // 构建验证码 redis key
         String key = RedisKeyConstants.buildVerificationCodeKey(email);
+        System.out.println(redisTemplate.get(key));
 
         // 判断是否已发送验证码
         boolean isSent = redisTemplate.hasKey(key);

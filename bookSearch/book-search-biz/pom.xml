@@ -227,7 +227,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.zhangzc.booksearchbiz.BookSearchBizApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

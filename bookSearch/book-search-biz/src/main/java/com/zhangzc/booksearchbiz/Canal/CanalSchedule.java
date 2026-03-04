@@ -1,6 +1,7 @@
 package com.zhangzc.booksearchbiz.Canal;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.protocol.Message;
@@ -18,6 +19,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -137,7 +139,7 @@ public class CanalSchedule implements Runnable {
     private void processEvent(Map<String, ValueAndFlagVo> columnMap, String table, CanalEntry.EventType eventType) throws Exception {
         switch (table) {
             case "t_comment_like" -> handleCommentEvent(columnMap, eventType);//评论表
-            case "t_note" -> handleNoteEvent(columnMap, eventType); // 笔记表
+            //case "t_note" -> handleNoteEvent(columnMap, eventType); // 笔记表
             case "t_user" -> handleUserEvent(columnMap, eventType); // 用户表
             case "t_user_count" -> handleUserCountEvent(columnMap, eventType); // 用户计数表
             case "t_note_count" -> handleNoteCountEvent(columnMap, eventType); // 笔记计数表
@@ -151,8 +153,6 @@ public class CanalSchedule implements Runnable {
             case UPDATE -> {
                 //更新热力值
                 Long commentId = Long.parseLong(columnMap.get("comment_id").getValue().toString());
-                //查询这个评论的一级评论
-                searchNoteMapper.updateHeatByCommentId(commentId, heat);
             }
         }
     }
@@ -171,32 +171,31 @@ public class CanalSchedule implements Runnable {
         switch (eventType) {
             case INSERT -> {
                 //是否存在记录
-                boolean flag = exitSearchNoteRspVo(noteId);
-                if (flag) {
-                    SearchNoteRspVO searchUserRspVoByUserId = getSearchNoteRspVoByNoteId(noteId);
-                    Integer insert = searchNoteMapper.insert(searchUserRspVoByUserId);
-                    System.out.println(insert + "条数据已经加载进去了");
+                boolean notExists = exitSearchNoteRspVo(noteId);
+                if (notExists) {
+                    SearchNoteRspVO searchNoteRspVO = getSearchNoteRspVoByNoteId(noteId);
+                    Integer insert = searchNoteMapper.insert(searchNoteRspVO);
+                    log.info("插入笔记计数数据到ES, noteId: {}, count: {}", noteId, insert);
                 }
             }
             case UPDATE -> {
                 //是否存在记录
-                boolean flag = exitSearchNoteRspVo(noteId);
-                if (flag) {
-                    SearchNoteRspVO searchUserRspVoByUserId = getSearchNoteRspVoByNoteId(noteId);
-                    Integer insert = searchNoteMapper.insert(searchUserRspVoByUserId);
-                    System.out.println(insert + "条数据已经加载进去了");
+                boolean notExists = exitSearchNoteRspVo(noteId);
+                if (notExists) {
+                    SearchNoteRspVO searchNoteRspVO = getSearchNoteRspVoByNoteId(noteId);
+                    Integer insert = searchNoteMapper.insert(searchNoteRspVO);
+                    log.info("插入笔记计数数据到ES, noteId: {}, count: {}", noteId, insert);
                 } else {
                     //Es中有对应的数据需要进行更新
-                    Map<String, Object> searchUserRspVoByUpdateColumn = getSearchNoteRspVoByUpdateColumn(columnMap);
-                    SearchNoteRspVO searchNoteRspVO = BeanUtil.copyProperties(searchUserRspVoByUpdateColumn, SearchNoteRspVO.class);
+                    Map<String, Object> updateColumnMap = getSearchNoteRspVoByUpdateColumn(columnMap);
+                    SearchNoteRspVO searchNoteRspVO = BeanUtil.copyProperties(updateColumnMap, SearchNoteRspVO.class);
                     searchNoteRspVO.setNoteId(noteId);
                     searchNoteMapper.updateById(searchNoteRspVO);
+                    log.info("更新笔记计数数据到ES, noteId: {}", noteId);
                 }
             }
             default -> log.warn("EventType: {} not support", eventType);
         }
-
-        //有数据存在了不需要操作因为只是添加操作
     }
 
     private Map<String, Object> getSearchNoteRspVoByUpdateColumn(Map<String, ValueAndFlagVo> columnMap) {
@@ -212,12 +211,23 @@ public class CanalSchedule implements Runnable {
 
     private SearchNoteRspVO getSearchNoteRspVoByNoteId(Long noteId) {
         List<Map<String, Object>> maps = selectMapper.selectEsNoteIndexData(noteId);
+        if (maps == null || maps.isEmpty()) {
+            return null;
+        }
         Map<String, Object> stringObjectMap = maps.get(0);
-        //获取封面中的第一个地址作为封面
-        stringObjectMap.put("cover", stringObjectMap.get("img_uris").toString().split(",")[0]);
-        stringObjectMap.put("highlightTitle", null);
-        return BeanUtil.copyProperties(stringObjectMap, SearchNoteRspVO.class);
-
+        
+        // 转换 Key 为驼峰
+        Map<String, Object> camelCaseMap = new HashMap<>();
+        stringObjectMap.forEach((k, v) -> camelCaseMap.put(StrUtil.toCamelCase(k), v));
+        
+        // 获取封面中的第一个地址作为封面
+        // 数据库字段是 img_uris, 转为驼峰后是 imgUris
+        if (camelCaseMap.get("imgUris") != null) {
+            camelCaseMap.put("cover", camelCaseMap.get("imgUris").toString().split(",")[0]);
+        }
+        camelCaseMap.put("highlightTitle", null);
+        
+        return BeanUtil.copyProperties(camelCaseMap, SearchNoteRspVO.class);
     }
 
     private boolean exitSearchNoteRspVo(Long noteId) {
@@ -303,53 +313,46 @@ public class CanalSchedule implements Runnable {
         return searchUserRspVO;
     }
 
-    /**
-     * 处理笔记表事件
-     *
-     * @param columnMap
-     * @param eventType
-     */
-    private void handleNoteEvent(Map<String, ValueAndFlagVo> columnMap, CanalEntry.EventType eventType) throws Exception {
-        if (columnMap == null || columnMap.isEmpty()) {
-            //删除不用管
-            return;
-        }
-        Long noteId = Long.parseLong(columnMap.get("id").getValue().toString());
-        //根据不同的消息进行处理
-        syncNote2Index(noteId, eventType, columnMap);
-    }
+    // private void handleNoteEvent(Map<String, ValueAndFlagVo> columnMap, CanalEntry.EventType eventType) throws Exception {
+    //     if (columnMap == null || columnMap.isEmpty()) {
+    //         //删除不用管
+    //         return;
+    //     }
+    //     Long noteId = Long.parseLong(columnMap.get("id").getValue().toString());
+    //     //根据不同的消息进行处理
+    //     syncNote2Index(noteId, eventType, columnMap);
+    // }
 
-    private void syncNote2Index(Long noteId, CanalEntry.EventType eventType, Map<String, ValueAndFlagVo> columnMap) {
-        switch (eventType) {
-            case INSERT -> {
-                //是否存在记录
-                boolean flag = exitSearchNoteRspVo(noteId);
-                if (flag) {
-                    SearchNoteRspVO searchUserRspVoByUserId = getSearchNoteRspVoByNoteId(noteId);
-                    Integer insert = searchNoteMapper.insert(searchUserRspVoByUserId);
-                    System.out.println(insert + "条数据已经加载进去了");
-                }
-            }
-            case UPDATE -> {
-                //是否存在记录
-                boolean flag = exitSearchNoteRspVo(noteId);
-                if (flag) {
-                    SearchNoteRspVO searchUserRspVoByUserId = getSearchNoteRspVoByNoteId(noteId);
-                    Integer insert = searchNoteMapper.insert(searchUserRspVoByUserId);
-                    System.out.println(insert + "条数据已经加载进去了");
-                } else {
-                    //Es中有对应的数据需要进行更新
-                    Map<String, Object> searchUserRspVoByUpdateColumn = getSearchNoteRspVoByUpdateColumn(columnMap);
-                    SearchNoteRspVO searchNoteRspVO = BeanUtil.copyProperties(searchUserRspVoByUpdateColumn, SearchNoteRspVO.class);
-                    searchNoteRspVO.setNoteId(noteId);
-                    searchNoteMapper.updateById(searchNoteRspVO);
-                }
-            }
-            default -> log.warn("EventType: {} not support", eventType);
-        }
-
-        //有数据存在了不需要操作因为只是添加操作
-    }
+    // private void syncNote2Index(Long noteId, CanalEntry.EventType eventType, Map<String, ValueAndFlagVo> columnMap) {
+    //     switch (eventType) {
+    //         case INSERT -> {
+    //             //是否存在记录
+    //             boolean notExists = exitSearchNoteRspVo(noteId);
+    //             if (notExists) {
+    //                 SearchNoteRspVO searchNoteRspVO = getSearchNoteRspVoByNoteId(noteId);
+    //                 Integer insert = searchNoteMapper.insert(searchNoteRspVO);
+    //                 log.info("插入笔记数据到ES, noteId: {}, count: {}", noteId, insert);
+    //             }
+    //         }
+    //         case UPDATE -> {
+    //             //是否存在记录
+    //             boolean notExists = exitSearchNoteRspVo(noteId);
+    //             if (notExists) {
+    //                 SearchNoteRspVO searchNoteRspVO = getSearchNoteRspVoByNoteId(noteId);
+    //                 Integer insert = searchNoteMapper.insert(searchNoteRspVO);
+    //                 log.info("插入笔记数据到ES, noteId: {}, count: {}", noteId, insert);
+    //             } else {
+    //                 //Es中有对应的数据需要进行更新
+    //                 Map<String, Object> updateColumnMap = getSearchNoteRspVoByUpdateColumn(columnMap);
+    //                 SearchNoteRspVO searchNoteRspVO = BeanUtil.copyProperties(updateColumnMap, SearchNoteRspVO.class);
+    //                 searchNoteRspVO.setNoteId(noteId);
+    //                 searchNoteMapper.updateById(searchNoteRspVO);
+    //                 log.info("更新笔记数据到ES, noteId: {}", noteId);
+    //             }
+    //         }
+    //         default -> log.warn("EventType: {} not support", eventType);
+    //     }
+    // }
 
     /**
      * 处理用户表事件

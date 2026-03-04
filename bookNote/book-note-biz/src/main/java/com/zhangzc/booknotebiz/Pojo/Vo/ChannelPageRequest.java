@@ -1,13 +1,17 @@
 package com.zhangzc.booknotebiz.Pojo.Vo;
 
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 频道分页请求参数类（用于接收“指定频道+分页”的查询条件）
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class ChannelPageRequest {
 

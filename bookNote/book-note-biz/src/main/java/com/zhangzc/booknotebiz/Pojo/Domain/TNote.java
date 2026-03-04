@@ -54,6 +54,12 @@ public class TNote implements Serializable {
     private String topicName;
 
     /**
+     * 频道ID
+     */
+    @TableField(value = "channel_id")
+    private Long channelId;
+
+    /**
      * 是否置顶(0：未置顶 1：置顶)
      */
     @TableField(value = "is_top")

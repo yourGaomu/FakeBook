@@ -25,5 +25,7 @@ public class PublishNoteReqVO {
     private String content;
 
     private Long topicId;
+
+    private Long channelId;
 }
 

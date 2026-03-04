@@ -22,13 +22,13 @@ public class CommentController {
     @Resource
     private CommentService commentService;
 
-    @PostMapping("/publish")
+    @PostMapping("/comment/publish")
     @ApiOperationLog(description = "发布评论")
     public R<?> publishComment(@Validated @RequestBody PublishCommentReqVO publishCommentReqVO) {
         return commentService.publishComment(publishCommentReqVO);
     }
 
-    @PostMapping("/list")
+    @PostMapping("/comment/list")
     @ApiOperationLog(description = "评论分页查询")
     public PageResponse<FindCommentItemRspVO> findCommentPageList(@RequestBody FindCommentPageListReqVO findCommentPageListReqVO) {
         return commentService.findCommentPageList(findCommentPageListReqVO);

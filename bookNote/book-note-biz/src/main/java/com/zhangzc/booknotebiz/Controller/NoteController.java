@@ -24,13 +24,13 @@ public class NoteController {
     private final NoteService noteService;
 
     @PostMapping("/discover/note/list")
-    public PageResponse<List<NoteVO>> showNotesInfoOnDiscoverPage(ChannelPageRequest channelPageRequest) {
+    public PageResponse<NoteVO> showNotesInfoOnDiscoverPage(@RequestBody ChannelPageRequest channelPageRequest) {
         return noteService.showNotesInfoOnDiscoverPage(channelPageRequest);
     }
 
     @PostMapping(value = "/profile/note/list")
     @ApiOperationLog(description = "用户主页 - 已发布笔记列表")
-    public  PageResponse<List<NotePageInfo>> findProfileNoteList(@RequestBody FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException, ExecutionException, InterruptedException {
+    public  PageResponse<NotePageInfo> findProfileNoteList(@RequestBody FindProfileNoteListReqVO findProfileNoteListReqVO) throws BizException, ExecutionException, InterruptedException {
         return noteService.findProfileNoteList(findProfileNoteListReqVO);
     }
 

@@ -37,6 +37,11 @@ public class SearchNoteRspVO {
     private String topicName;
 
     /**
+     * 频道ID
+     */
+    private Long channelId;
+
+    /**
      * 标题
      */
     private String title;

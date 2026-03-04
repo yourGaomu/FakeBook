@@ -95,11 +95,7 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.zhangzc</groupId>
-            <artifactId>fakebook-spring-boot-start-context</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
+        
 
         <dependency>
             <groupId>com.zhangzc</groupId>
@@ -221,7 +217,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.zhangzc.bookuserbiz.BookUserBizApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

@@ -97,7 +97,7 @@ public class CommentServiceImpl implements CommentService {
         // 每页展示一级评论数
         long pageSize = 10;
         //查询一级评论
-        IPage<TComment> page1 = new Page<>(page, pageSize);
+        IPage<TComment> page1 = new Page<>(page,10L);
         LambdaQueryWrapper<TComment> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(TComment::getNoteId, noteId)
                 .eq(TComment::getLevel, 1)

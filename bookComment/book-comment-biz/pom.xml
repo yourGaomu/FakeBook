@@ -27,9 +27,6 @@
 
     <dependencies>
 
-
-
-
         <!-- Canal -->
         <dependency>
             <groupId>com.alibaba.otter</groupId>
@@ -91,7 +88,6 @@
         </dependency>
 
 
-
         <!-- 快手 Buffer Trigger -->
         <dependency>
             <groupId>com.github.phantomthief</groupId>
@@ -137,6 +133,12 @@
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>3.5.12</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>3.5.12</version>
+        </dependency>
         <!-- MySQL 驱动 -->
         <dependency>
             <groupId>mysql</groupId>
@@ -170,16 +172,7 @@
             <version>2022.0.0.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.zhangzc</groupId>
-            <artifactId>book-common</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <!-- 服务发现 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
+        
 
 
         <dependency>
@@ -222,9 +215,10 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
+                    <skip>false</skip>
                     <mainClass>com.zhangzc.bookcommentbiz.BookCommentBizApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
+
                 <executions>
                     <execution>
                         <id>repackage</id>

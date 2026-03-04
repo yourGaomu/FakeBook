@@ -10,6 +10,7 @@ public enum ExceptionEnum implements ExceptionInterface {
     // ----------- 业务异常状态码 -----------
     VERIFICATION_CODE_SEND_FREQUENTLY("AUTH-20000", "请求太频繁，请3分钟后再试"),
     VERIFICATION_CODE_ERROR("AUTH-20001", "验证码错误"),
+    VERIFICATION_CODE_EMPTY("AUTH-20002", "验证码为空"),
 
 
     ;

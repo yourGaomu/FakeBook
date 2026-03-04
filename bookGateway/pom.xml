@@ -85,8 +85,6 @@
             <version>${sa-token.version}</version>
         </dependency>
 
-
-
         <!-- 服务发现 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
@@ -144,14 +142,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- Spring Boot 版本管理 -->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
 
             <!-- Spring Cloud 版本管理 -->
             <dependency>
@@ -191,8 +181,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.zhangzc.bookgateway.BookGatewayApplication</mainClass>
-                    <skip>true</skip>
+                    <mainClass>com.zhangzc.bookgateway.GatewayApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

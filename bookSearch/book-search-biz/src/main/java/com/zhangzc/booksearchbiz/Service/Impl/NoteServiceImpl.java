@@ -43,6 +43,13 @@ public class NoteServiceImpl implements NoteService {
         } else {
             wrapper.eq(SearchNoteRspVO::getType, type);
         }
+
+        // 频道ID查询
+        Long channelId = searchNoteReqVO.getChannelId();
+        if (channelId != null) {
+            wrapper.eq(SearchNoteRspVO::getChannelId, channelId);
+        }
+
         //进行时间的区间判断
         if (searchNoteReqVO.getPublishTimeRange() != null) {
             switch (searchNoteReqVO.getPublishTimeRange()) {
@@ -120,5 +127,11 @@ public class NoteServiceImpl implements NoteService {
         }
         List<SearchNoteRspVO> list = searchNoteRspVOEsPageInfo.getList();
         return PageResponse.success(list, pageNo, total);
+    }
+
+    @Override
+    public Boolean syncNote(SearchNoteRspVO searchNoteRspVO) {
+        Integer insert = searchNoteMapper.insert(searchNoteRspVO);
+        return insert > 0;
     }
 }
