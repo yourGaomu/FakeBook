@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhangzc.blog.blogai.Mapper.TLlmModelMapper">
+
+    <resultMap id="BaseResultMap" type="com.zhangzc.blog.blogai.Pojo.domain.TLlmModel">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="modelName" column="model_name" jdbcType="VARCHAR"/>
+            <result property="modelCode" column="model_code" jdbcType="VARCHAR"/>
+            <result property="modelType" column="model_type" jdbcType="VARCHAR"/>
+            <result property="apiKey" column="api_key" jdbcType="VARCHAR"/>
+            <result property="baseUrl" column="base_url" jdbcType="VARCHAR"/>
+            <result property="provider" column="provider" jdbcType="VARCHAR"/>
+            <result property="systemMessageId" column="system_message_id" jdbcType="BIGINT"/>
+            <result property="isEnable" column="is_enable" jdbcType="TINYINT"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+            <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+            <result property="isNet" column="is_net" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,model_name,model_code,model_type,
+        api_key,base_url,provider,
+        system_message_id,is_enable,created_at,updated_at,is_net
+    </sql>
+</mapper>

@@ -26,6 +26,7 @@
         <module>bookCount</module>
         <module>bookComment</module>
         <module>share-thing-chat</module>
+        <module>bookAi</module>
     </modules>
 
     <properties>

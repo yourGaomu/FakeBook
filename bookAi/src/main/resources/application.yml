@@ -1,0 +1,28 @@
+server:
+  port: 8083
+
+# Milvus 配置 (使用框架前缀 zhang.milvus)
+zhang:
+  milvus:
+    enable: true
+    uri: http://119.45.4.154:19530
+    dbName: blog
+    username: mikasa
+    password: mikasa
+  
+  # Embedding 配置 (使用框架前缀 zhang.embedding)
+  embedding:
+    api-key: sk-140cb8883e8743dabc411f1cce9ba5cf
+    endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
+    model: text-embedding-v4
+    base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    dimensions: 128
+    
+  # Kafka 配置 (仅保留应用特定配置，通用配置由 share_kafka.yaml 提供)
+  kafka:
+    enable_mongo: true
+    consumer:
+      group-id: blog-ai-group
+mybatis-plus:
+  global-config:
+    enable-sql-runner: true
