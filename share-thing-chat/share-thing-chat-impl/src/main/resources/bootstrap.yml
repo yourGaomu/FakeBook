@@ -1,0 +1,63 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  application:
+    name: share-thing-chat-impl
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 47.108.58.72:8848
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 47.108.58.72:8848
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+        file-extension: yaml
+        shared-configs: # 共享配置
+          - data-id: share_chat.yaml
+            group: mysql
+            refresh: true
+          - data-id: share_all_leaf.yaml
+            group: leaf
+            refresh: true
+          - data-id: share_kafka.yaml
+            group: kafka
+            refresh: true
+          - data-id: share_mongodb.yaml
+            group: mongodb
+            refresh: true
+          - data-id: redis.yaml
+            group: redis
+            refresh: true
+          - data-id: share_sentiveWord.yaml
+            group: sentiveWord
+            refresh: true
+          - data-id: share_minio.yaml
+            group: minio
+            refresh: true
+          - data-id: share_filter.yaml
+            group: filter
+            refresh: true
+
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP&namespace=0d275001-e548-47ce-b78e-23dbf9fd060c&username=nacos&password=nacos
+
+dubbo:
+  application:
+    name: ${spring.application.name}-rpc
+  protocol:
+    name: tri
+    port: -1
+  registry:
+    address: nacos://47.108.58.72:8848
+    parameters:
+      namespace: 097517a7-1b6f-4b1e-80d0-070c3465fc77
+      username: nacos
+      password: nacos
+    register-mode: instance

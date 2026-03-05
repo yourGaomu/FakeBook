@@ -27,4 +27,6 @@ public interface UserService {
     R<List<FindUserByIdRspDTO>> findByIds(FindUsersByIdsReqDTO findUsersByIdsReqDTO);
 
     R<FindUserProfileRspVO> findUserProfile(FindUserProfileReqVO findUserProfileReqVO) throws BizException;
+
+    R searchUser(Map<String, String> searchUserReqDTO);
 }

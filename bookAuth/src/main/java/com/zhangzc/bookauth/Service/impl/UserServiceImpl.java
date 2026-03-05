@@ -38,10 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -100,7 +97,7 @@ public class UserServiceImpl implements UserService {
                     if (Objects.isNull(userIdTmp)) {
                         throw new BizException(ResponseCodeEnum.LOGIN_FAIL);
                     }
-                    userId = Long.valueOf(String.valueOf(userIdTmp));
+                    userId = Long.valueOf(userIdTmp);
                     break;
                 case PASSWORD:
                     // 密码登录
@@ -152,6 +149,9 @@ public class UserServiceImpl implements UserService {
             mqUtil.send("book.redis", MQTopicConstants.TOPIC_CREATE_USER_ROLE, JsonUtils.toJsonString(userRoleByRedis));
         }
         redisUtil.del(RedisKeyConstants.buildVerificationCodeKey(email));
+        Map<String,String> result = new HashMap<>();
+        result.put("token",tokenInfo.getTokenValue());
+        result.put("userId",userId.toString());
         return R.success(tokenInfo.getTokenValue());
     }
 

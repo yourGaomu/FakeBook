@@ -3,7 +3,8 @@
 <mapper namespace="com.zhangzc.booksearchbiz.Mapper.Mp.SelectMapper">
 
     <select id="selectEsNoteIndexData" resultType="map" parameterType="map">
-        select n.id as noteId, n.title, n.topic_name as topicName, n.channel_id as channelId, n.type, n.img_uris as imgUris,
+        select n.id as noteId, n.creator_id as userId, n.title, n.topic_name as topicName, n.channel_id as channelId, n.type, n.img_uris as imgUris,
+        n.video_uri as videoUri,
         n.create_time,
         n.update_time as updateTime,
         u.nickname, u.avatar,

@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class LikeNoteReqVO {
 
 
-    private Long id;
+    private String id;
 
 }
 

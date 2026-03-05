@@ -18,9 +18,15 @@ import java.time.LocalDateTime;
 public class NoteVO {
 
     /**
+     * 标题
+    * */
+    private String title;
+
+
+    /**
      * 笔记ID（唯一标识，通常为 Long 类型，支持大数值场景）
      */
-    private Long id;
+    private String id;
 
     /**
      * 笔记内容（文本内容，可能包含长文本，用 String 类型）
@@ -64,7 +70,22 @@ public class NoteVO {
     private Boolean isLiked;
 
     /**
-     * 图片URL列表（多个图片链接，用 List<String> 存储）
+     * 封面地址
+    * */
+    private String cover;
+
+    /**
+     * 笔记类型（0：图文，1：视频）
      */
-    private List<String> images;
+    private Integer type;
+
+    /**
+     * 视频地址
+     */
+    private String videoUri;
+
+//    /**
+//     * 图片URL列表（多个图片链接，用 List<String> 存储）
+//     */
+//    private List<String> images;
 }

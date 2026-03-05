@@ -28,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.sql.Time;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +85,7 @@ public class CommentServiceImpl implements CommentService {
     public PageResponse<FindCommentItemRspVO> findCommentPageList(FindCommentPageListReqVO findCommentPageListReqVO) {
 
         //获取笔记id
-        Long noteId = findCommentPageListReqVO.getNoteId();
+        Long noteId = Long.valueOf(findCommentPageListReqVO.getNoteId());
         if (noteId == null) {
             return PageResponse.success(null, 0L, 0L);
         }
@@ -116,7 +118,12 @@ public class CommentServiceImpl implements CommentService {
         //获取评论的内容
         List<FindCommentContentReqDTO> findCommentContentReqDTOList = records.stream().map(tComment -> {
             FindCommentContentReqDTO findCommentContentReqDTO = new FindCommentContentReqDTO();
-            findCommentContentReqDTO.setYearMonth(TimeUtil.formatToYearMonth(tComment.getCreateTime()));
+            // findCommentContentReqDTO.setYearMonth(TimeUtil.formatToYearMonth(tComment.getCreateTime()));
+            // 修复: 数据库中的 year_month 是 "2026-3" 格式，而不是 "2026-03"
+            LocalDateTime createTime = TimeUtil.getLocalDateTime(tComment.getCreateTime());
+            String yearMonth = createTime.getYear() + "-" + createTime.getMonthValue();
+            findCommentContentReqDTO.setYearMonth(yearMonth);
+            
             findCommentContentReqDTO.setContentId(tComment.getContentUuid());
             return findCommentContentReqDTO;
         }).toList();
@@ -178,7 +185,12 @@ public class CommentServiceImpl implements CommentService {
         //获取评论的内容
         List<FindCommentContentReqDTO> findCommentContentReqDTOList = records.stream().map(tComment -> {
             FindCommentContentReqDTO findCommentContentReqDTO = new FindCommentContentReqDTO();
-            findCommentContentReqDTO.setYearMonth(TimeUtil.formatToYearMonth(tComment.getCreateTime()));
+            // findCommentContentReqDTO.setYearMonth(TimeUtil.formatToYearMonth(tComment.getCreateTime()));
+            // 修复: 数据库中的 year_month 是 "2026-3" 格式
+            LocalDateTime createTime = TimeUtil.getLocalDateTime(tComment.getCreateTime());
+            String yearMonth = createTime.getYear() + "-" + createTime.getMonthValue();
+            findCommentContentReqDTO.setYearMonth(yearMonth);
+            
             findCommentContentReqDTO.setContentId(tComment.getContentUuid());
             return findCommentContentReqDTO;
         }).toList();

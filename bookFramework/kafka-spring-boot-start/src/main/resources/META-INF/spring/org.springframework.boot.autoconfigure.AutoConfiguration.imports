@@ -1,0 +1,2 @@
+com.zhangzc.kafkaspringbootstart.config.KafkaConfig
+com.zhangzc.kafkaspringbootstart.aspect.KafkaOffsetAspect

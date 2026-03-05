@@ -34,6 +34,11 @@ public class UserController {
     private final UserService userService;
 
 
+    @PostMapping("/search")
+    public R searchUser(@RequestBody Map<String,String> searchUserReqDTO) {
+        return userService.searchUser(searchUserReqDTO);
+    }
+
     /**
      * 获取用户主页信息
      *

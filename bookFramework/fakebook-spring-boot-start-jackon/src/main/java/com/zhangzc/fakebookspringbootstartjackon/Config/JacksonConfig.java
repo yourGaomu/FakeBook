@@ -74,7 +74,7 @@ public class JacksonConfig {
         // 全局 List 反序列化（上下文感知）：
         // - List<String>: 接受字符串/字符串数组
         // - List<Long>: 接受数字/数字数组/字符串数字
-        javaTimeModule.addDeserializer(List.class, new FlexibleListDeserializer());
+        // javaTimeModule.addDeserializer(List.class, new FlexibleListDeserializer());
 
         // 注册模块
         objectMapper.registerModule(javaTimeModule);

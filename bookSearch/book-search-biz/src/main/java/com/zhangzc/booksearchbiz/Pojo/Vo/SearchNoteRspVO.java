@@ -29,6 +29,12 @@ public class SearchNoteRspVO {
     private Long noteId;
 
     /**
+     * 用户ID
+     */
+    @IndexField(fieldType = FieldType.LONG)
+    private Long userId;
+
+    /**
      * 笔记类型：null：综合 / 0：图文 / 1：视频
      */
     @IndexField(fieldType = FieldType.INTEGER, strategy = FieldStrategy.IGNORED)
@@ -41,7 +47,14 @@ public class SearchNoteRspVO {
     private String cover;
 
     /**
-     * 话题名称/**
+     * 视频地址
+     */
+    @IndexField(fieldType = FieldType.KEYWORD)
+    private String videoUri;
+
+    /**
+     * 话题名称
+/**
      * */
     @IndexField(fieldType = FieldType.TEXT, analyzer = "ik_max_word") // 中文分词
     private String topicName;

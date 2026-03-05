@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class FindCommentPageListReqVO {
 
 
-    private Long noteId;
+    private String noteId;
 
 
     private Integer pageNo = 1;

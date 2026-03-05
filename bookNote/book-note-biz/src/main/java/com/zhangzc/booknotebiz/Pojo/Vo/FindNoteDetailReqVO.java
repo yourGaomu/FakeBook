@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 public class FindNoteDetailReqVO {
 
 
-    private Long id;
+    private String id;
 
 }

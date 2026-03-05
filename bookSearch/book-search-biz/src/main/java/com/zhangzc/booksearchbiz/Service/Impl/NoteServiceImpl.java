@@ -117,9 +117,12 @@ public class NoteServiceImpl implements NoteService {
         LambdaEsQueryWrapper<SearchNoteRspVO> wrapper = new LambdaEsQueryWrapper<>();
         wrapper.gt(SearchNoteRspVO::getLikeTotal, -1, 0.5F)
                 .gt(SearchNoteRspVO::getCollectTotal, -1, 0.2F)
-                .gt(SearchNoteRspVO::getCommentTotal, -1, 0.3F)
                 //按照评分来排序
+                .gt(SearchNoteRspVO::getCommentTotal, -1, 0.3F)
                 .sortByScore();
+        if (searchNoteReqVO.getChannelId() != 0) {
+            wrapper.eq(SearchNoteRspVO::getChannelId, searchNoteReqVO.getChannelId());
+        }
         EsPageInfo<SearchNoteRspVO> searchNoteRspVOEsPageInfo = searchNoteMapper.pageQuery(wrapper, pageNo, 10);
         Long total = searchNoteRspVOEsPageInfo.getTotal();
         if (total == 0) {

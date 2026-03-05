@@ -16,8 +16,12 @@ public class SearchNoteRspVO {
     /**
      * 笔记ID
      */
-    //IdType.CUSTOMIZE: 由用户自定义
     private Long noteId;
+
+    /**
+     * 用户ID
+     */
+    private Long userId;
 
     /**
      * 笔记类型：null：综合 / 0：图文 / 1：视频
@@ -30,6 +34,10 @@ public class SearchNoteRspVO {
      */
     private String cover;
 
+    /**
+     * 视频地址
+     */
+    private String videoUri;
 
     /**
      * 话题

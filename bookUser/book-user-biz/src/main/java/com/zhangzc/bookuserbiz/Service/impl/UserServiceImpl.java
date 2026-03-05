@@ -8,7 +8,9 @@ import com.zhangzc.bookcommon.Exceptions.BizException;
 import com.zhangzc.bookcommon.Utils.R;
 import com.zhangzc.bookcommon.Utils.TimeUtil;
 import com.zhangzc.bookcountapi.Pojo.Dto.Resp.FindUserCountsByIdRspDTO;
+import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUsersByIdsReqDTO;
+import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByPhoneRspDTO;
 import com.zhangzc.bookuserbiz.Const.MQConstants;
 import com.zhangzc.bookuserbiz.Const.RedisKeyConstants;
@@ -19,10 +21,9 @@ import com.zhangzc.bookuserbiz.Enum.SexEnum;
 import com.zhangzc.bookuserbiz.Enum.StatusEnum;
 import com.zhangzc.bookuserbiz.Pojo.Domain.TUser;
 import com.zhangzc.bookuserbiz.Pojo.Domain.TUserRoleRel;
-import com.zhangzc.bookuserapi.Pojo.Dto.Req.FindUserByIdReqDTO;
-import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.FindUserProfileReqVO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.FindUserProfileRspVO;
+import com.zhangzc.bookuserbiz.Pojo.Vo.SearchUserVO;
 import com.zhangzc.bookuserbiz.Pojo.Vo.UpdateUserInfoReqVO;
 import com.zhangzc.bookuserbiz.Service.TRoleService;
 import com.zhangzc.bookuserbiz.Service.TUserRoleRelService;
@@ -40,7 +41,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
@@ -55,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -502,6 +501,37 @@ public class UserServiceImpl implements UserService {
 
         return R.success(findUserProfileRspVO);
 
+    }
+
+    @Override
+    public R searchUser(Map<String, String> searchUserReqDTO) {
+        //获取关键词
+        String keyword = searchUserReqDTO.get("keyword");
+        if (keyword == null) {
+            return R.success(null);
+        }
+        //去查询
+        List<TUser> list = tuserService.lambdaQuery()
+                .eq(TUser::getXiaohashuId, keyword)
+                .or()
+                .like(TUser::getNickname, keyword)
+                .eq(TUser::getIsDeleted, DeletedEnum.NO.getValue())
+                .list();
+
+        if (list.isEmpty()) {
+            return R.success(null);
+        }
+
+        List<SearchUserVO> result = list.stream().map(user -> {
+            //进行转换
+            SearchUserVO searchUserVO = new SearchUserVO();
+            searchUserVO.setAvatar(user.getAvatar());
+            searchUserVO.setNickname(user.getNickname());
+            searchUserVO.setUserId(user.getId().toString());
+            return searchUserVO;
+        }).toList();
+
+        return R.success(result);
     }
 }
 
