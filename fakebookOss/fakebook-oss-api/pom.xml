@@ -16,6 +16,8 @@
         <spring-cloud.version>2022.0.0</spring-cloud.version>
         <!-- 统一管理Spring Cloud Alibaba版本 -->
         <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
+        <!-- 适配JDK 17的编译器插件版本 -->
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
     </properties>
     <parent>
         <groupId>com.zhangzc</groupId>
@@ -30,7 +32,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            
+            <version>1.18.30</version>
         </dependency>
 
         <!-- Feign 表单提交 -->
@@ -92,23 +94,16 @@
 
     <build>
         <plugins>
-            
+            <!-- 修复后的maven-compiler-plugin -->
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <mainClass>com.zhangzc.fakebookossapi.FakebookOssApiApplication</mainClass>
-                    <skip>true</skip>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>repackage</id>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

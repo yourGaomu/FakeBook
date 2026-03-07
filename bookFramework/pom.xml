@@ -32,7 +32,7 @@
         <module>mongodb-spring-boot-start</module>
     </modules>
 
-    <!-- 指定父项�?-->
+    <!-- 指定父项�?-->
     <parent>
         <groupId>com.zhangzc</groupId>
         <artifactId>fakebook</artifactId>
@@ -68,9 +68,13 @@
 
     <build>
         <plugins>
-            <!-- 只保留编译器插件，确保子模块的编译版本正�?-->
-            
-            <!-- 移除spring-boot-maven-plugin，父工程不需�?-->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

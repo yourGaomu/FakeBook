@@ -11,6 +11,9 @@ public class BizException extends Exception {
         this.code = exceptionInterface.getCode();
         this.msg = exceptionInterface.getMeg();
     }
-
+    public BizException(String reason) {
+        this.code = "500";
+        this.msg = reason;
+    }
 
 }

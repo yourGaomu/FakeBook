@@ -7,17 +7,19 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>book-common</name>
     <description>book-common</description>
+
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>3.0.2</spring-boot.version>
-
         <guava.version>33.0.0-jre</guava.version>
         <hutool.version>5.8.26</hutool.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
+        <lombok.version>1.18.30</lombok.version> <!-- 新增lombok版本 -->
     </properties>
-    <!-- 指定父项�?-->
+
+    <!-- 指定父项目 -->
     <parent>
         <groupId>com.zhangzc</groupId>
         <artifactId>bookFramework</artifactId>
@@ -28,15 +30,15 @@
     <packaging>jar</packaging>
 
     <dependencies>
-
+        <!-- Lombok依赖（补充scope和版本） -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            
+            <version>${lombok.version}</version>
+            <scope>provided</scope> <!-- 编译时生效，运行时不需要 -->
         </dependency>
 
-
-        <!-- 相关工具�?-->
+        <!-- 相关工具类 -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -54,6 +56,7 @@
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
         </dependency>
+
         <!-- Jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -65,18 +68,13 @@
             <artifactId>jackson-core</artifactId>
         </dependency>
 
-        <!-- 解决 Jackson Java 8 新日�?API 的序列化问题 -->
+        <!-- 解决 Jackson Java 8 新日期 API 的序列化问题 -->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
-        
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -84,6 +82,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -98,26 +97,29 @@
 
     <build>
         <plugins>
-            
+            <!-- 新增：显式配置编译插件，绑定JDK17版本 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <forceJavacCompilerUse>true</forceJavacCompilerUse>
+                </configuration>
+            </plugin>
+
+            <!-- 修复：Spring Boot插件仅保留skip配置，移除多余的executions -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.zhangzc.bookcommon.BookCommonApplication</mainClass>
-                    <skip>true</skip>
+                    <skip>true</skip> <!-- 完全跳过Spring Boot打包逻辑 -->
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>repackage</id>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <!-- 移除executions，避免repackage执行冲突 -->
             </plugin>
         </plugins>
     </build>
-
 </project>
-

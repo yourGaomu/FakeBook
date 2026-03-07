@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.zhangzc</groupId>
@@ -7,6 +8,7 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>bookGateway</name>
     <description>bookGateway</description>
+
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,16 +19,18 @@
         <!-- 统一管理Spring Cloud Alibaba版本 -->
         <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
         <sa-token.version>1.44.0</sa-token.version>
+        <!-- 适配JDK 17的编译器插件版本 -->
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
 
-
     <dependencies>
-
-
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Redis -->
@@ -40,40 +44,36 @@
             <groupId>com.zhangzc</groupId>
             <artifactId>fakebook-spring-boot-start-jackon</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-
             <exclusions>
-                <!-- 排除间接引入�?Spring MVC 依赖 -->
+                <!-- 排除间接引入的Spring MVC 依赖 -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-web</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-
 
         <dependency>
             <groupId>com.zhangzc</groupId>
             <artifactId>book-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
             <exclusions>
-                <!-- 排除间接引入�?Spring MVC 依赖 -->
+                <!-- 排除间接引入的Spring MVC 依赖 -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-web</artifactId>
                 </exclusion>
             </exclusions>
-
         </dependency>
 
-        <!-- Sa-Token 整合 Redis （使�?jackson 序列化方式） -->
+        <!-- Sa-Token 整合 Redis （使用jackson 序列化方式） -->
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-redis-jackson</artifactId>
             <version>${sa-token.version}</version>
         </dependency>
 
-
-        <!-- 提供Redis连接�?-->
+        <!-- 提供Redis连接池 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
@@ -103,18 +103,17 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
-        <!-- 配置中心支持（可选，如需从Nacos获取配置�?-->
+        <!-- 配置中心支持（可选，如需从Nacos获取配置） -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-        <!-- Bootstrap上下文支持（加载配置中心配置�?-->
+        <!-- Bootstrap上下文支持（加载配置中心配置） -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
-
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -126,6 +125,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
@@ -133,6 +133,7 @@
             <scope>compile</scope>
         </dependency>
     </dependencies>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -160,13 +161,23 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
     <build>
         <plugins>
-            
+            <!-- 修复后的maven-compiler-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -185,6 +196,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
-
