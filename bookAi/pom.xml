@@ -29,6 +29,13 @@
     </parent>
     <dependencies>
 
+
+        <dependency>
+            <groupId>com.zhangzc</groupId>
+            <artifactId>thredlocalpool-spring-boot-start</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- 显式指定 Nacos Client（可选但推荐�?-->
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
@@ -140,7 +147,11 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-
+        <!-- Feign -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

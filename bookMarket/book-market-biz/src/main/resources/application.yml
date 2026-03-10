@@ -1,0 +1,39 @@
+server:
+  port: 18084
+
+spring:
+  application:
+    name: book-market-biz
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 47.108.58.72:8848
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 47.108.58.72:8848
+        namespace: 758b786a-91d2-4183-a473-896187866151
+        username: nacos
+        password: nacos
+        file-extension: yaml
+        extension-configs:
+          - data-id: share_kafka.yaml
+            group: kafka
+            refresh: true
+          - data-id: fake_mark.yaml
+            group: mysql
+            refresh: true
+          - data-id: book_Redis.yaml
+            group: redis
+            refresh: true
+          - data-id: share_all_leaf.yaml
+            group: leaf
+            refresh: true
+          - data-id: share_mongodb.yaml
+            group: mongodb
+            refresh: true
+  config:
+    import:
+      - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?group=DEFAULT_GROUP&namespace=${spring.cloud.nacos.config.namespace}
+

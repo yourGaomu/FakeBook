@@ -18,7 +18,9 @@ import dev.langchain4j.service.AiServices;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 import reactor.core.publisher.Flux;
@@ -41,6 +43,8 @@ public class DynamicChatService {
     private final WebSearchTool webSearchTool;
     private final SqlTool sqlTool;
     private final ImageGenTool imageGenTool;
+    @Qualifier("threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     private final Map<String, ChatStreamService> service4Online = new ConcurrentHashMap<>();
     private final Map<String, ChatStreamService> service4NotOnline = new ConcurrentHashMap<>();
