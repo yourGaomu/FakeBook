@@ -16,6 +16,18 @@ spring:
         password: nacos
         file-extension: yaml
         extension-configs:
+          - data-id: share_mongodb.yaml
+            group: mongo
+            refresh: true
+          - data-id: share_kafka.yaml
+            group: kafka
+            refresh: true
+          - data-id: fakebook_email.yaml
+            group: email
+            refresh: true
+          - data-id: book_Mail.yaml
+            group: mail
+            refresh: true
           - data-id: book_SearchApi.yaml
             group: mysql
             refresh: true  # 支持动态刷新

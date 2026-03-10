@@ -15,7 +15,6 @@ public class MQUtil {
     private final MailHelper mailHelper;
     public void sendCode(String to, String title, String code) {
         rabbitTemplate.convertAndSend("book.send","sendCode", JsonUtils.toJsonString(MailVo.builder().to(to).title(title).content(code).build()));
-       /* mailHelper.sendCode(MailVo.builder().to(to).title(title).content(code).build());*/
     }
 
     public void send(String exchange,String routeKey, Object message) {

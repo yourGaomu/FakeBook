@@ -23,8 +23,8 @@ public class MongoChatSession {
     @Field("model_id")
     private Long modelId;
 
-    @Field("system_message_id")
-    private Long systemMessageId;
+    @Field("prompt_id")
+    private Long promptId;
 
     @Field("summary")
     private String summary;

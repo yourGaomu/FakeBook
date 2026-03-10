@@ -19,7 +19,6 @@ import javax.annotation.Resource;
 @AllArgsConstructor
 public class MailHelper {
 
-
     private final JavaMailSender javaMailSender;
 
     private final MailProperties mailProperties;
@@ -72,7 +71,6 @@ public class MailHelper {
 
         return true;
     }
-
 
     private boolean senHtmlTask(String to, String title, String html) {
         log.info("==> 开始发送邮件 ...");

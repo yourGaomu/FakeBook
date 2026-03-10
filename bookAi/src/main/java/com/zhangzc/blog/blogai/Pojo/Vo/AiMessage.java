@@ -27,4 +27,18 @@ public class AiMessage {
      */
     @Nullable
     private Boolean enableWebSearch;
+
+    /**
+     * 提示词ID
+     */
+    @Nullable
+    private Long promptId;
+
+    /**
+     * 提示词类型 (systemPrompt / userPrompt)
+     */
+    @Nullable
+    private String promptType;
+    
+
 }

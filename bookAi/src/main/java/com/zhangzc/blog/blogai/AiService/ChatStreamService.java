@@ -13,7 +13,6 @@ import reactor.core.publisher.Flux;
         wiringMode = AiServiceWiringMode.EXPLICIT
 )
 public interface ChatStreamService {
-    @SystemMessage(fromResource= "systemMessage.txt")
     Flux<String> chat(@MemoryId String userId, @UserMessage String userMessage);
 }
 

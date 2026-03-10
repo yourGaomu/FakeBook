@@ -27,7 +27,7 @@ public class AddUserId2HeaderFilter implements GlobalFilter {
      * 请求头中，用户 ID 的键
      */
     private static final String HEADER_USER_ID = "userId";
-    private final String TOKEN_HEADER_KEY = "Authorization";
+    private final String TOKEN_HEADER_KEY = "Authorization4Fk";
     /**
      * Token 前缀
      */

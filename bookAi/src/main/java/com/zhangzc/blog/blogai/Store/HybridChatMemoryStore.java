@@ -4,7 +4,7 @@ import com.zhangzc.blog.blogai.Pojo.Vo.SessionListVo;
 import com.zhangzc.blog.blogai.Pojo.domain.MongoChatMessage;
 import com.zhangzc.blog.blogai.Pojo.dto.ChatHistoryDto;
 
-import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
+
 import com.zhangzc.kafkaspringbootstart.utills.KafkaUtills;
 import com.zhangzc.redisspringbootstart.utills.RedisUtil;
 import dev.langchain4j.data.message.ChatMessage;
@@ -80,8 +80,8 @@ public class HybridChatMemoryStore implements ChatMemoryStore {
         mongoStore.deleteMessages(memoryId);
     }
 
-    public void createSession(String sessionId, Long userId, Long modelId, String title) {
-        mongoStore.createSession(sessionId, userId, modelId, title);
+    public void createSession(String sessionId, Long userId, Long modelId, Long promptId, String title) {
+        mongoStore.createSession(sessionId, userId, modelId, promptId, title);
     }
 
     public List<SessionListVo> getSessions(Long userId) {

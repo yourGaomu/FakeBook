@@ -8,4 +8,5 @@ public class SessionListVo {
     private String sessionId;
     private String title;
     private LocalDateTime updatedAt;
+    private String promptId;
 }

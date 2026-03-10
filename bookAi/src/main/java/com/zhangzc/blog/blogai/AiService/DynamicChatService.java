@@ -1,20 +1,19 @@
 package com.zhangzc.blog.blogai.AiService;
 
-import com.alibaba.dashscope.aigc.generation.GenerationParam;
 import com.zhangzc.blog.blogai.Pojo.domain.TLlmModel;
 import com.zhangzc.blog.blogai.Pojo.domain.TSystemMessage;
 import com.zhangzc.blog.blogai.Service.TLlmModelService;
 import com.zhangzc.blog.blogai.Service.TSystemMessageService;
-import com.zhangzc.blog.blogai.Tools.AliWebSearchTool;
+import com.zhangzc.blog.blogai.Tools.ImageGenTool;
 import com.zhangzc.blog.blogai.Tools.SqlTool;
 import com.zhangzc.blog.blogai.Tools.TaiServiceTool;
 import com.zhangzc.blog.blogai.Tools.WebSearchTool;
-
-import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
+import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
+import dev.langchain4j.data.message.Content;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
-import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,12 +40,14 @@ public class DynamicChatService {
     private final TaiServiceTool taiServiceTool;
     private final WebSearchTool webSearchTool;
     private final SqlTool sqlTool;
-    private final AliWebSearchTool aliWebSearchTool;
+    private final ImageGenTool imageGenTool;
 
-    private final Map<String,ChatStreamService> service4Online = new  ConcurrentHashMap<>();
-    private final Map<String,ChatStreamService> service4NotOnline = new  ConcurrentHashMap<>();
+    private final Map<String, ChatStreamService> service4Online = new ConcurrentHashMap<>();
+    private final Map<String, ChatStreamService> service4NotOnline = new ConcurrentHashMap<>();
 
     private final Map<Long, ChatStreamService> serviceCache = new ConcurrentHashMap<>();
+    // Key format: "modelId:promptId"
+    private final Map<String, ChatStreamService> serviceCacheByPrompt = new ConcurrentHashMap<>();
     private final Map<String, ChatStreamService> serviceCacheBySystemMessage = new ConcurrentHashMap<>();
 
 
@@ -71,19 +72,30 @@ public class DynamicChatService {
 
                         if ("aliyun".equals(modelConfig.getProvider())) {
                             //判断是否能主动联网
+                            //文本模型才能联网
+                            log.info("开始阿里云百炼构建模型：{},模型类型是:{}", modelConfig.getModelName(),modelConfig.getModelType());
+
+                            if (modelConfig.getModelType().equals("text")) {
                                 streamingChatModel = QwenStreamingChatModel.builder()
                                         .apiKey(modelConfig.getApiKey())
                                         .modelName(modelConfig.getModelCode())
                                         .baseUrl(modelConfig.getBaseUrl())
                                         .enableSearch(true)
                                         .build();
-
+                            } else {
+                                streamingChatModel = QwenStreamingChatModel.builder()
+                                        .apiKey(modelConfig.getApiKey())
+                                        .modelName(modelConfig.getModelCode())
+                                        .baseUrl(modelConfig.getBaseUrl())
+                                        .build();
+                            }
                         } else {
+                            log.info("开始构建构建模型：{},模型类型是:{}", modelConfig.getModelName(),modelConfig.getModelType());
                             OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder builder = OpenAiStreamingChatModel.builder()
                                     .apiKey(modelConfig.getApiKey())
                                     .modelName(modelConfig.getModelCode())
-                                    .logRequests(false)
-                                    .logResponses(false);
+                                    .logRequests(true)
+                                    .logResponses(true);
                             // 只有当 BaseUrl 不为空时才设置，否则使用默认的 OpenAI URL
                             if (modelConfig.getBaseUrl() != null && !modelConfig.getBaseUrl().trim().isEmpty()) {
                                 builder.baseUrl(modelConfig.getBaseUrl());
@@ -99,14 +111,14 @@ public class DynamicChatService {
 
                         // 根据是否原生支持联网决定挂载哪些工具
                         if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
-                            // 原生支持联网：只挂载 TaiServiceTool (RAG)，不挂载 WebSearchTool
-                            serviceBuilder.tools(sqlTool, taiServiceTool);
+                            // 原生支持联网：只挂载 TaiServiceTool (RAG) 和 ImageGenTool，不挂载 WebSearchTool
+                            serviceBuilder.tools(sqlTool, taiServiceTool, imageGenTool);
                         } else {
 //                            // 原生不支持联网：挂载 TaiServiceTool 和 WebSearchTool
 //                            if (modelConfig.getProvider() != null && modelConfig.getProvider().equals("aliyun"))
 //                                serviceBuilder.tools(taiServiceTool);
                             if (modelConfig.getProvider() != null && !modelConfig.getProvider().equals("aliyun"))
-                                serviceBuilder.tools(sqlTool, taiServiceTool, webSearchTool);
+                                serviceBuilder.tools(sqlTool, taiServiceTool, webSearchTool, imageGenTool);
                         }
 
                         ChatStreamService service = serviceBuilder.build();
@@ -150,6 +162,138 @@ public class DynamicChatService {
 
         // 构建新实例
         return buildAndCacheService(modelId);
+    }
+
+    /**
+     * 根据 modelId 和 promptId 获取 ChatStreamService
+     *
+     * @param modelId  模型ID
+     * @param promptId 提示词ID (可为 null)
+     * @return ChatStreamService 实例
+     */
+    public ChatStreamService getService(Long modelId, Long promptId) {
+        if (promptId == null) {
+            return getService(modelId);
+        }
+
+        if (modelId == null) {
+            TLlmModel defaultModel = tLlmModelService.lambdaQuery()
+                    .eq(TLlmModel::getIsEnable, 1)
+                    .last("LIMIT 1")
+                    .one();
+            if (defaultModel != null) {
+                modelId = defaultModel.getId();
+            } else {
+                throw new RuntimeException("No available LLM model configuration found.");
+            }
+        }
+
+        String cacheKey = modelId + ":" + promptId;
+        if (serviceCacheByPrompt.containsKey(cacheKey)) {
+            return serviceCacheByPrompt.get(cacheKey);
+        }
+
+        return buildAndCacheServiceByPrompt(modelId, promptId, cacheKey);
+    }
+
+    private synchronized ChatStreamService buildAndCacheServiceByPrompt(Long modelId, Long promptId, String cacheKey) {
+        // 双重检查
+        if (serviceCacheByPrompt.containsKey(cacheKey)) {
+            return serviceCacheByPrompt.get(cacheKey);
+        }
+
+        TLlmModel modelConfig = tLlmModelService.getById(modelId);
+        if (modelConfig == null) {
+            throw new RuntimeException("LLM model configuration not found for id: " + modelId);
+        }
+
+        if (modelConfig.getIsEnable() != 1) {
+            throw new RuntimeException("LLM model is disabled: " + modelConfig.getModelName());
+        }
+
+        // 1. 构建 StreamingChatModel (复用现有逻辑，或者抽取公共构建方法)
+        StreamingChatModel streamingChatModel = buildStreamingChatModel(modelConfig);
+
+        // 2. 构建 System Message
+        String finalSystemMessage = buildSystemMessage(modelConfig, promptId);
+
+        // 3. 构建 AiServices
+        AiServices<ChatStreamService> serviceBuilder = AiServices.builder(ChatStreamService.class)
+                .streamingChatModel(streamingChatModel)
+                .chatMemoryProvider(chatMemoryProvider)
+                .systemMessageProvider(memoryId -> finalSystemMessage);
+
+        // 4. 挂载工具
+        if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
+            serviceBuilder.tools(sqlTool, taiServiceTool, imageGenTool);
+        } else {
+            serviceBuilder.tools(sqlTool, taiServiceTool, webSearchTool, imageGenTool);
+        }
+
+        ChatStreamService service = serviceBuilder.build();
+
+        serviceCacheByPrompt.put(cacheKey, service);
+        return service;
+    }
+
+    private StreamingChatModel buildStreamingChatModel(TLlmModel modelConfig) {
+        if ("aliyun".equals(modelConfig.getProvider())) {
+            return QwenStreamingChatModel.builder()
+                    .apiKey(modelConfig.getApiKey())
+                    .modelName(modelConfig.getModelCode())
+                    .enableSearch(modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1)
+                    .build();
+        } else {
+            OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder builder = OpenAiStreamingChatModel.builder()
+                    .apiKey(modelConfig.getApiKey())
+                    .modelName(modelConfig.getModelCode())
+                    .logRequests(true)
+                    .logResponses(true);
+            if (modelConfig.getBaseUrl() != null && !modelConfig.getBaseUrl().trim().isEmpty()) {
+                builder.baseUrl(modelConfig.getBaseUrl());
+            }
+            return builder.build();
+        }
+    }
+
+    public String getFullSystemMessage(Long modelId, Long promptId) {
+        if (modelId == null) {
+            TLlmModel defaultModel = tLlmModelService.lambdaQuery()
+                    .eq(TLlmModel::getIsEnable, 1)
+                    .last("LIMIT 1")
+                    .one();
+            if (defaultModel != null) {
+                modelId = defaultModel.getId();
+            } else {
+                throw new RuntimeException("No available LLM model configuration found.");
+            }
+        }
+        
+        TLlmModel modelConfig = tLlmModelService.getById(modelId);
+        if (modelConfig == null) {
+            throw new RuntimeException("LLM model configuration not found for id: " + modelId);
+        }
+        return buildSystemMessage(modelConfig, promptId);
+    }
+
+    private String buildSystemMessage(TLlmModel modelConfig, Long promptId) {
+        String baseSystemMessage = loadSystemMessage(modelConfig);
+        if (promptId == null) {
+            return baseSystemMessage;
+        }
+
+        TSystemMessage customPrompt = tSystemMessageService.getById(promptId);
+        if (customPrompt == null || customPrompt.getContent() == null) {
+            return baseSystemMessage;
+        }
+
+        // 策略:
+        // systemPrompt -> Base + "Additional Instructions" + Content
+        // userPrompt -> Base + "Additional User Instructions" + Content
+        // 这里为了简化和安全，统一采用 追加模式 (Append Mode)
+        // 这样无论是什么类型的 Prompt，都无法覆盖底层的安全指令
+        
+        return baseSystemMessage + "\n\n在不违反以上要求的前提下，请遵循以下特殊要求：\n" + customPrompt.getContent();
     }
 
     public ChatStreamService getService(Long modelId, String systemMessageFileName) {
@@ -204,8 +348,8 @@ public class DynamicChatService {
                     .apiKey(modelConfig.getApiKey())
                     .modelName(modelConfig.getModelCode())
                     .baseUrl(modelConfig.getBaseUrl())
-                    .logRequests(false)
-                    .logResponses(false)
+                    .logRequests(true)
+                    .logResponses(true)
                     .build();
         }
 
@@ -219,9 +363,9 @@ public class DynamicChatService {
         //.toolProvider(toolProvider)
 
         if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
-            serviceBuilder.tools(sqlTool, taiServiceTool);
+            serviceBuilder.tools(sqlTool, taiServiceTool,imageGenTool);
         } else {
-            serviceBuilder.tools(sqlTool, taiServiceTool, webSearchTool);
+            serviceBuilder.tools(sqlTool, taiServiceTool, webSearchTool,imageGenTool);
         }
 
         ChatStreamService service = serviceBuilder.build();
@@ -261,8 +405,8 @@ public class DynamicChatService {
                     .apiKey(modelConfig.getApiKey())
                     .modelName(modelConfig.getModelCode())
                     .baseUrl(modelConfig.getBaseUrl())
-                    .logRequests(false)
-                    .logResponses(false)
+                    .logRequests(true)
+                    .logResponses(true)
                     .build();
         }
 
@@ -280,9 +424,9 @@ public class DynamicChatService {
         //.toolProvider(toolProvider)
 
         if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
-            serviceBuilder.tools(sqlTool, taiServiceTool);
+            serviceBuilder.tools(sqlTool, taiServiceTool,imageGenTool);
         } else {
-            serviceBuilder.tools(sqlTool, taiServiceTool, webSearchTool);
+            serviceBuilder.tools(sqlTool, taiServiceTool, webSearchTool,imageGenTool);
         }
 
         ChatStreamService service = serviceBuilder.build();
@@ -352,5 +496,25 @@ public class DynamicChatService {
     public void clearCache() {
         serviceCache.clear();
         serviceCacheBySystemMessage.clear();
+    }
+
+    /**
+     * 获取指定模型的基础系统提示词 (用于组合自定义提示词时保持安全限制)
+     * @param modelId 模型ID
+     * @return 基础系统提示词
+     */
+    public String getBaseSystemMessage(Long modelId) {
+        if (modelId == null) {
+            TLlmModel defaultModel = tLlmModelService.lambdaQuery()
+                    .eq(TLlmModel::getIsEnable, 1)
+                    .last("LIMIT 1")
+                    .one();
+            if (defaultModel != null) {
+                modelId = defaultModel.getId();
+            }
+        }
+        
+        TLlmModel modelConfig = tLlmModelService.getById(modelId);
+        return loadSystemMessage(modelConfig);
     }
 }

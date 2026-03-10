@@ -1,6 +1,5 @@
 package com.zhangzc.blog.blogai.Store;
 
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.zhangzc.blog.blogai.AiService.ChatSummaryService;
 import com.zhangzc.blog.blogai.Pojo.Vo.SessionListVo;
@@ -8,8 +7,7 @@ import com.zhangzc.blog.blogai.Pojo.domain.MongoChatMessage;
 import com.zhangzc.blog.blogai.Pojo.domain.MongoChatSession;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.ChatMessageDeserializer;
-import dev.langchain4j.data.message.ChatMessageSerializer;
+import dev.langchain4j.data.message.ChatMessageType;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
@@ -158,7 +156,12 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
     public List<MongoChatMessage> getHistoryDetails(String sessionId) {
         Query query = new Query(Criteria.where("session_id").is(sessionId));
         query.with(Sort.by(Sort.Direction.ASC, "created_at"));
-        return mongoTemplate.find(query, MongoChatMessage.class);
+        List<MongoChatMessage> messages = mongoTemplate.find(query, MongoChatMessage.class);
+        return messages.stream()
+                .filter(msg -> ChatMessageType.AI.equals(msg.getType())
+                        || ChatMessageType.USER.equals(msg.getType())
+                        || ChatMessageType.SYSTEM.equals(msg.getType()))
+                .collect(Collectors.toList());
     }
 
     public List<SessionListVo> getSessionList(Long userId) {
@@ -169,6 +172,7 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
             SessionListVo vo = new SessionListVo();
             vo.setSessionId(s.getId());
             vo.setTitle(s.getTitle());
+            vo.setPromptId(s.getPromptId() == null ? null : s.getPromptId().toString());
             vo.setUpdatedAt(s.getUpdatedAt());
             return vo;
         }).collect(Collectors.toList());
@@ -182,16 +186,16 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
         Update update = new Update();
         update.set("is_deleted", true);
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, MongoChatSession.class);
-        if (updateResult.getModifiedCount()>=0) {
+        if (updateResult.getModifiedCount() >= 0) {
             return;
-        }else {
+        } else {
 
-            log.error("Failed to delete messages for session: {}",memoryId.toString());
+            log.error("Failed to delete messages for session: {}", memoryId.toString());
         }
 
     }
 
-    public void createSession(String sessionId, Long userId, Long modelId, String title) {
+    public void createSession(String sessionId, Long userId, Long modelId, Long promptId, String title) {
         Query query = new Query(Criteria.where("id").is(sessionId));
         MongoChatSession existing = mongoTemplate.findOne(query, MongoChatSession.class);
         if (existing != null) {
@@ -200,7 +204,8 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
         MongoChatSession session = new MongoChatSession();
         session.setId(sessionId);
         session.setUserId(userId);
-        session.setModelId(modelId);
+        session.setModelId(modelId != null ? modelId : 1L);
+        session.setPromptId(promptId);
         session.setTitle(title);
         session.setIsDeleted(false);
         session.setCreatedAt(LocalDateTime.now());
@@ -249,11 +254,18 @@ public class MongoChatMemoryStore implements ChatMemoryStore {
 
     private String getText(ChatMessage msg) {
         if (msg instanceof UserMessage) {
-            return ((UserMessage) msg).singleText();
+            try {
+                return ((UserMessage) msg).singleText();
+            } catch (Exception e) {
+                // Fallback for multi-modal or complex user messages
+                return msg.toString();
+            }
         } else if (msg instanceof AiMessage) {
-            return ((AiMessage) msg).text();
+            String text = ((AiMessage) msg).text();
+            return text != null ? text : msg.toString();
         } else if (msg instanceof SystemMessage) {
-            return ((SystemMessage) msg).text();
+            String text = ((SystemMessage) msg).text();
+            return text != null ? text : msg.toString();
         }
         return msg.toString();
     }

@@ -1,19 +1,13 @@
 package com.zhangzc.bookgateway.Constants;
 
-/**
- * @author: 犬小哈
- * @date: 2024/5/21 15:04
- * @version: v1.0.0
- * @description: TODO
- **/
-public class RedisKeyConstants {
 
+public class RedisKeyConstants {
 
 
     /**
      * Sa-Token 登录的 Token KEY 前缀
      */
-    public static final String SA_TOKEN_TOKEN_KEY_PREFIX = "Authorization:login:token:";
+    public static final String SA_TOKEN_TOKEN_KEY_PREFIX = "Authorization4Fk:login:token:";
 
     /**
      * 用户对应角色集合 KEY 前缀

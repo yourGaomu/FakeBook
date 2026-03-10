@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.SetOperations;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -175,6 +176,7 @@ public class RedisSetUtil {
         for (Object obj : rawSet) {
             resultSet.add((T) obj);
         }
+
         return resultSet;
     }
 

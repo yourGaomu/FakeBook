@@ -2,7 +2,7 @@ package com.zhangzc.booksearchbiz.Start;
 
 
 import com.zhangzc.booksearchbiz.Const.EsUpdataSign;
-import com.zhangzc.booksearchbiz.Utils.RedisUtil;
+import com.zhangzc.redisspringbootstart.utills.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
