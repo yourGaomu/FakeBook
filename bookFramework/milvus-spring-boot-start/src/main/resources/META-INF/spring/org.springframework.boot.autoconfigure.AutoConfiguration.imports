@@ -1,0 +1,7 @@
+com.zhangzc.milvusspringbootstart.config.milvusConfig
+com.zhangzc.milvusspringbootstart.config.EmbeddingConfig
+com.zhangzc.milvusspringbootstart.config.RerankConfig
+com.zhangzc.milvusspringbootstart.rerank.service.RerankModelService
+com.zhangzc.milvusspringbootstart.rerank.service.impl.TLlmModelServiceImpl
+com.zhangzc.milvusspringbootstart.rerank.factory.impl.DashScopeRerankFactory
+com.zhangzc.milvusspringbootstart.aspect.AiMonitorAspect

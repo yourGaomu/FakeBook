@@ -32,6 +32,7 @@
         <module>mongodb-spring-boot-start</module>
         <module>email-spring-boot-start</module>
         <module>sms-spring-boot-start</module>
+        <module>milvus-spring-boot-start</module>
     </modules>
 
     <!-- 指定父项�?-->

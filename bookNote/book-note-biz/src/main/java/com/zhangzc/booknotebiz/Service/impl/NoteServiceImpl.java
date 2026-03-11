@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.zhangzc.bookcommon.Exceptions.BizException;
@@ -22,10 +23,12 @@ import com.zhangzc.booknotebiz.Enum.NoteStatusEnum;
 import com.zhangzc.booknotebiz.Enum.NoteTypeEnum;
 import com.zhangzc.booknotebiz.Enum.NoteVisibleEnum;
 import com.zhangzc.booknotebiz.Enum.ResponseCodeEnum;
+import com.zhangzc.booknotebiz.Mapper.MilvusMapper.FakeBookNotesMilvusMapper;
 import com.zhangzc.booknotebiz.Pojo.Domain.*;
 import com.zhangzc.booknotebiz.Pojo.Dto.CollectUnCollectNoteMqDTO;
 import com.zhangzc.booknotebiz.Pojo.Dto.LikeUnlikeNoteMqDTO;
 import com.zhangzc.booknotebiz.Pojo.Dto.PublishNoteMqDTO;
+import com.zhangzc.booknotebiz.Pojo.Milvus.FakeBookNotes;
 import com.zhangzc.booknotebiz.Pojo.Vo.*;
 import com.zhangzc.booknotebiz.Rpc.*;
 import com.zhangzc.booknotebiz.Service.*;
@@ -38,12 +41,11 @@ import com.zhangzc.booksearchapi.Pojo.Dto.Resp.SearchNoteRspVO;
 import com.zhangzc.bookuserapi.Pojo.Dto.Resp.FindUserByIdRspDTO;
 import com.zhangzc.fakebookspringbootstartcontext.Const.LoginUserContextHolder;
 import com.zhangzc.fakebookspringbootstartjackon.Utils.JsonUtils;
+import com.zhangzc.milvusspringbootstart.utills.EmbeddingUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
-
-
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -60,12 +62,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 @Service
 @Slf4j
 public class NoteServiceImpl implements NoteService {
 
+    private final EmbeddingUtil embeddingUtil;
     private final SearchRpcService searchRpcService;
     private final DistributedIdGeneratorRpcService distributedIdGeneratorRpcService;
     private final CountRpcService countRpcService;
@@ -83,10 +84,12 @@ public class NoteServiceImpl implements NoteService {
     private final TNoteCollectionService tNoteCollectService;
     private final RedisHashExample redisHashExample;
     private final TChannelService tChannelService;
+    private final FakeBookNotesMilvusMapper fakeBookNotesMilvusMapper;
     private final TChannelTopicRelService tChannelTopicRelService;
 
     // 手动编写构造函数，为线程池参数添加 @Qualifier
     public NoteServiceImpl(
+            EmbeddingUtil embeddingUtil,
             SearchRpcService searchRpcService,
             CountRpcService countRpcService,
             TChannelTopicRelService tChannelTopicRelService,
@@ -104,8 +107,10 @@ public class NoteServiceImpl implements NoteService {
             RedisTemplate<String, Object> redisTemplate,
             TNoteCountService tNoteCountService,
             TNoteLikeService tNoteLikeService,
-            TNoteCollectionService tNoteCollectionService
+            TNoteCollectionService tNoteCollectionService,
+            FakeBookNotesMilvusMapper fakeBookNotesMilvusMapper
     ) {
+        this.embeddingUtil = embeddingUtil;
         this.searchRpcService = searchRpcService;
         this.countRpcService = countRpcService;
         this.tChannelTopicRelService = tChannelTopicRelService;
@@ -124,6 +129,7 @@ public class NoteServiceImpl implements NoteService {
         this.tNoteCountService = tNoteCountService;
         this.tNoteLikeService = tNoteLikeService;
         this.tNoteCollectService = tNoteCollectionService;
+        this.fakeBookNotesMilvusMapper = fakeBookNotesMilvusMapper;
     }
 
 
@@ -234,8 +240,29 @@ public class NoteServiceImpl implements NoteService {
             PublishNoteMqDTO publishNoteMqDTO = PublishNoteMqDTO.builder()
                     .userId(creatorId)
                     .build();
-
             rabbitMqUtil.send("count.exchange", MQConstants.TAG_USER_NOTE_PUBLISH, JsonUtils.toJsonString(publishNoteMqDTO));
+
+            CompletableFuture.runAsync(() -> {
+                try {
+                    //存入milvus数据库中
+                    FakeBookNotes fakeBookNotes = new FakeBookNotes();
+                    fakeBookNotes.setContent(content);
+                    fakeBookNotes.setId(snowflakeIdId);
+                    fakeBookNotes.setTitle(publishNoteReqVO.getTitle());
+                    if (creatorId != null) {
+                        fakeBookNotes.setUserId(creatorId.toString());
+                    }
+                    fakeBookNotes.setVisible(1);
+                    fakeBookNotes.setType(type);
+                    fakeBookNotes.setImageUrl(publishNoteReqVO.getImgUris());
+                    List<List<Float>> embed = embeddingUtil.embed(List.of(publishNoteReqVO.getContent(), publishNoteReqVO.getTitle()));
+                    fakeBookNotes.setContent_vct(embed.get(0));
+                    fakeBookNotes.setTitle_vct(embed.get(1));
+                    fakeBookNotesMilvusMapper.insert(fakeBookNotes);
+                } catch (RuntimeException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         } catch (Exception e) {
             log.error("==> 笔记存储失败", e);
             // RPC: 笔记保存失败，则删除笔记内容
@@ -265,7 +292,7 @@ public class NoteServiceImpl implements NoteService {
                 .commentTotal(0L)
                 .build();
         Boolean b = searchRpcService.syncNote(searchNoteRspVO);
-        if(!b){
+        if (!b) {
             log.error("同步es失败");
         }
 
@@ -285,9 +312,9 @@ public class NoteServiceImpl implements NoteService {
         if (o != null) {
             FindNoteDetailRspVO vo;
             if (o instanceof String) {
-                 vo = JsonUtils.parseObject((String) o, FindNoteDetailRspVO.class);
+                vo = JsonUtils.parseObject((String) o, FindNoteDetailRspVO.class);
             } else {
-                 vo = JsonUtils.parseObject(JsonUtils.toJsonString(o), FindNoteDetailRspVO.class);
+                vo = JsonUtils.parseObject(JsonUtils.toJsonString(o), FindNoteDetailRspVO.class);
             }
             // 可见性校验
             if (vo != null) {
@@ -807,7 +834,7 @@ public class NoteServiceImpl implements NoteService {
         }
         //更新Zset里面的数据
         redisTemplate.opsForZSet().remove(userNoteLikeZSetKey, noteId);
-        
+
         Long finalUserId1 = userId;
         //通知mq
         threadPoolTaskExecutor.execute(() -> {
@@ -838,7 +865,7 @@ public class NoteServiceImpl implements NoteService {
 
         //判断笔记是否存在
         Integer result = Integer.valueOf(String.valueOf(checkNoteExist(id, userId)));
-        
+
         String userNoteCollectZSetKey = RedisKeyConstants.buildUserNoteCollectZSetKey(userId);
         switch (result) {
             case 1:
@@ -958,9 +985,9 @@ public class NoteServiceImpl implements NoteService {
         //判断笔记是否存在
         // 这里的 checkNoteIsExist 命名可能需要改为 checkNoteCollected，因为它返回的是 Bloom Filter 的结果
         Integer result = Integer.valueOf(String.valueOf(checkNoteExist(noteId, userId)));
-        
+
         String userNoteCollectZSetKey = RedisKeyConstants.buildUserNoteCollectZSetKey(userId);
-        
+
         switch (result) {
             case 1:
                 //用户收藏过
@@ -973,7 +1000,7 @@ public class NoteServiceImpl implements NoteService {
                             .eq(TNoteCollection::getNoteId, noteId)
                             .eq(TNoteCollection::getStatus, 1).one();
                     if (one == null) {
-                         throw new BizException(ResponseCodeEnum.NOTE_NOT_COLLECTED);
+                        throw new BizException(ResponseCodeEnum.NOTE_NOT_COLLECTED);
                     }
                 }
                 break;
@@ -1351,7 +1378,7 @@ public class NoteServiceImpl implements NoteService {
         //获取频道id
         Long channelId = Long.parseLong(channelPageRequest.getChannelId());
         //判断是否存在
-        if(channelId!=0L){
+        if (channelId != 0L) {
             TChannel one = tChannelService.lambdaQuery().eq(TChannel::getId, channelId).one();
             if (one == null) {
                 throw new BizException(ResponseCodeEnum.CHANNEL_NOT_FOUND);
@@ -1661,7 +1688,7 @@ public class NoteServiceImpl implements NoteService {
     private void handleExistNote(LikeNoteReqVO likeNoteReqVO) throws BizException {
         //获取笔记id
         Long noteId = Long.valueOf(likeNoteReqVO.getId());
-        
+
         //构建KEY
         String key = RedisKeyConstants.buildNoteDetailKey(noteId);
         Object o = redisUtil.get(key);

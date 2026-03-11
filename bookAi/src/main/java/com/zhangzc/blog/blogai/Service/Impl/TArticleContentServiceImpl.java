@@ -15,6 +15,11 @@ import org.springframework.stereotype.Service;
 public class TArticleContentServiceImpl extends ServiceImpl<TArticleContentMapper, TArticleContent>
     implements TArticleContentService{
 
+    public String getAticleContent(String articleId){
+        return this.baseMapper.getAticleContent(articleId);
+    }
+
+
 }
 
 

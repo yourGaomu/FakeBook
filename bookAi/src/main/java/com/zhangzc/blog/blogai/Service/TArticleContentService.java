@@ -9,5 +9,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2025-10-17 16:40:17
 */
 public interface TArticleContentService extends IService<TArticleContent> {
-
+    String getAticleContent(String articleId);
 }

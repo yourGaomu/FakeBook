@@ -13,4 +13,14 @@
     <sql id="Base_Column_List">
         id,article_id,content
     </sql>
+
+
+    <select id="getAticleContent" resultType="string">
+        SELECT nc.content -- 笔记文本内容
+        FROM t_note n
+                 LEFT JOIN t_note_content nc
+                           ON n.content_uuid = nc.id -- 通过UUID关联内容表
+        WHERE n.id = #{articleId}; -- 替换为具体的笔记ID（如 123456）
+    </select>
+    
 </mapper>

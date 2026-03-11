@@ -15,7 +15,7 @@
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
         <java.javac.path>C:\Users\mcymn\.jdks\corretto-17.0.12\bin\javac.exe</java.javac.path>
-        <langchain4j.version>1.0.1-beta6</langchain4j.version>
+        <langchain4j.version>1.12.1-beta21</langchain4j.version>
         <mysql.version>8.0.33</mysql.version>
         <okhttp.version>4.12.0</okhttp.version>
     </properties>
@@ -28,7 +28,6 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <dependencies>
-
 
         <dependency>
             <groupId>com.zhangzc</groupId>
@@ -60,6 +59,12 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-mcp</artifactId>
             <version>${langchain4j.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>dev.langchain4j</groupId>
+                    <artifactId>langchain4j-http-client-jdk</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Druid 数据库连接池 -->
@@ -90,12 +95,12 @@
         </dependency>
 
 
-        <!-- 关键：添加OkHttp客户端依赖（解决ClassNotFound问题） -->
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>${okhttp.version}</version>
-        </dependency>
+<!--        &lt;!&ndash; 关键：添加OkHttp客户端依赖（解决ClassNotFound问题） &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.squareup.okhttp3</groupId>-->
+<!--            <artifactId>okhttp</artifactId>-->
+<!--            <version>${okhttp.version}</version>-->
+<!--        </dependency>-->
 
         <!-- Bootstrap上下文支持（加载配置中心配置） -->
         <dependency>
@@ -185,8 +190,17 @@
             <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
             <version>${langchain4j.version}</version>
             <exclusions>
-
+                <exclusion>
+                    <groupId>dev.langchain4j</groupId>
+                    <artifactId>langchain4j-http-client-spring-restclient</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-http-client-jdk</artifactId>
+            <version>1.12.1</version>
         </dependency>
 
         <dependency>
@@ -218,12 +232,12 @@
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
-        <!-- Lombok（修复：添加provided作用域） -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
-            <scope>provided</scope> <!-- 关键：编译时依赖，不打包 -->
+            <!-- 建议升级到 1.18.30 或更高版本 -->
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Spring Boot Starter（自动包含基础模块） -->
@@ -259,6 +273,12 @@
             <version>2.22.6</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.zhangzc</groupId>
+            <artifactId>milvus-spring-boot-start</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
 
@@ -287,7 +307,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.30</version>
+                            <version>${lombok.version}</version>
                         </path>
                         <!-- MyBatis Plus注解处理器（可选，避免编译警告） -->
                         <path>
@@ -326,20 +346,9 @@
     </build>
 
     <repositories>
-        <!-- 阿里云镜像（加速依赖下载）- 优先使用 -->
         <repository>
-            <id>aliyunmaven</id>
-            <url>https://maven.aliyun.com/repository/public</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>central-direct</id>
-            <name>Maven Central Direct</name>
+            <id>central</id>
+            <name>Maven Central</name>
             <url>https://repo.maven.apache.org/maven2</url>
             <releases>
                 <enabled>true</enabled>
@@ -352,8 +361,8 @@
 
     <pluginRepositories>
         <pluginRepository>
-            <id>central-direct-plugin</id>
-            <name>Maven Central Plugin Direct</name>
+            <id>central</id>
+            <name>Maven Central</name>
             <url>https://repo.maven.apache.org/maven2</url>
             <releases>
                 <enabled>true</enabled>
@@ -361,10 +370,6 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>aliyunmaven-plugin</id>
-            <url>https://maven.aliyun.com/repository/public</url>
         </pluginRepository>
     </pluginRepositories>
 </project>

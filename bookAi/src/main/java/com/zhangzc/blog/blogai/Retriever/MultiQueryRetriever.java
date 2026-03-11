@@ -1,6 +1,8 @@
 package com.zhangzc.blog.blogai.Retriever;
 
 
+import com.zhangzc.blog.blogai.Tools.ContentRetriever.MilvusContentRetriever;
+import com.zhangzc.blog.blogai.Tools.ContentRetriever.WebContentRetriever;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
@@ -23,13 +25,10 @@ public class MultiQueryRetriever implements ContentRetriever {
                     "By generating multiple perspectives on the user question, your goal is to help the user overcome some of the limitations of the distance-based similarity search. " +
                     "Provide these alternative questions separated by newlines. Original question: %s";
     private final ChatModel chatModel;
-    private final ContentRetriever webContentRetriever;
-    private final ContentRetriever milvusContentRetriever;
+    private final WebContentRetriever webContentRetriever;
+    private final MilvusContentRetriever milvusContentRetriever;
     @Builder.Default
     private final int queryCount = 3;
-    // 实际执行检索的检索器
-    private Map<ContentRetriever, String> retrieverMap;
-    private QueryRouter queryRouter;
 
     @Override
     public List<Content> retrieve(Query query) {
@@ -42,10 +41,21 @@ public class MultiQueryRetriever implements ContentRetriever {
         log.info("Generated queries: {}", queries);
 
         // 2. 并行执行检索
-        retrieverMap.put(webContentRetriever, "它是一个基于互联网搜索的查询，具有实时性的数据可以根据它来检索");
-        retrieverMap.put(milvusContentRetriever, "它是一个基于嵌入数据库的查询，关于知识库的内容可以根据它来检索");
+        // 使用局部变量避免并发问题
+        Map<ContentRetriever, String> retrieverMap = new HashMap<>();
+        if (webContentRetriever != null) {
+            retrieverMap.put(webContentRetriever, "它是一个基于互联网搜索的查询，具有实时性的数据可以根据它来检索");
+        }
+        if (milvusContentRetriever != null) {
+            retrieverMap.put(milvusContentRetriever, "它是一个基于Milvus嵌入式数据库的查询，关于用户笔记的相关内容可以根据它来检索");
+        }
+        
+        if (retrieverMap.isEmpty()) {
+            log.warn("No retrievers available for MultiQueryRetriever");
+            return Collections.emptyList();
+        }
 
-        queryRouter = new LanguageModelQueryRouter(chatModel, retrieverMap);
+        QueryRouter queryRouter = new LanguageModelQueryRouter(chatModel, retrieverMap);
 
         List<CompletableFuture<Collection<ContentRetriever>>> futures = queries.stream()
                 .map(q -> CompletableFuture.supplyAsync(() -> queryRouter.route(Query.from(q))))
@@ -57,10 +67,16 @@ public class MultiQueryRetriever implements ContentRetriever {
 
         for (CompletableFuture<Collection<ContentRetriever>> future : futures) {
             try {
-                Collection<ContentRetriever> contents = future.join();
-                if (contents != null) {
-                    List<Content> retrieve = contents.iterator().next().retrieve(query);
-                    mergedResults.addAll(retrieve);
+                Collection<ContentRetriever> retrievers = future.join();
+                if (retrievers != null && !retrievers.isEmpty()) {
+                    for (ContentRetriever retriever : retrievers) {
+                        try {
+                            List<Content> retrieve = retriever.retrieve(query);
+                            mergedResults.addAll(retrieve);
+                        } catch (Exception e) {
+                            log.error("Error retrieving from specific retriever", e);
+                        }
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error during retrieval for query", e);

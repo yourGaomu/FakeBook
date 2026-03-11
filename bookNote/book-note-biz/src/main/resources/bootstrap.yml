@@ -16,6 +16,9 @@ spring:
         password: nacos
         file-extension: yaml
         extension-configs:
+          - data-id: milvus_embedding.yaml
+            group: milvus
+            refresh: true
           - data-id: book_NoteApi.yaml
             group: mysql
             refresh: true  # 支持动态刷新

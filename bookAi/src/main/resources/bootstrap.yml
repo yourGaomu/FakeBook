@@ -21,7 +21,7 @@ spring:
           - data-id: share_ai.yaml
             group: mysql
             refresh: true
-          - data-id: share_milvus.yaml
+          - data-id: milvus_embedding.yaml
             group: milvus
             refresh: true
           - data-id: share_kafka.yaml

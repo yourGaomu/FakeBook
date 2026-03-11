@@ -43,8 +43,7 @@ public class DynamicChatService {
     private final WebSearchTool webSearchTool;
     private final SqlTool sqlTool;
     private final ImageGenTool imageGenTool;
-    @Qualifier("threadPoolTaskExecutor")
-    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     private final Map<String, ChatStreamService> service4Online = new ConcurrentHashMap<>();
     private final Map<String, ChatStreamService> service4NotOnline = new ConcurrentHashMap<>();
@@ -111,7 +110,8 @@ public class DynamicChatService {
                         AiServices<ChatStreamService> serviceBuilder = AiServices.builder(ChatStreamService.class)
                                 .streamingChatModel(streamingChatModel)
                                 .chatMemoryProvider(chatMemoryProvider)
-                                .systemMessageProvider(memoryId -> systemMessage);
+                                .systemMessageProvider(memoryId -> systemMessage)
+                                .executeToolsConcurrently(threadPoolTaskExecutor);
 
                         // 根据是否原生支持联网决定挂载哪些工具
                         if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
@@ -225,7 +225,8 @@ public class DynamicChatService {
         AiServices<ChatStreamService> serviceBuilder = AiServices.builder(ChatStreamService.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .systemMessageProvider(memoryId -> finalSystemMessage);
+                .systemMessageProvider(memoryId -> finalSystemMessage)
+                .executeToolsConcurrently(threadPoolTaskExecutor);
 
         // 4. 挂载工具
         if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
@@ -363,7 +364,8 @@ public class DynamicChatService {
         AiServices<ChatStreamService> serviceBuilder = AiServices.builder(ChatStreamService.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .systemMessageProvider(memoryId -> systemMessage);
+                .systemMessageProvider(memoryId -> systemMessage)
+                .executeToolsConcurrently(threadPoolTaskExecutor);
         //.toolProvider(toolProvider)
 
         if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
@@ -424,7 +426,8 @@ public class DynamicChatService {
         AiServices<ChatStreamService> serviceBuilder = AiServices.builder(ChatStreamService.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .systemMessageProvider(memoryId -> systemMessage);
+                .systemMessageProvider(memoryId -> systemMessage)
+                .executeToolsConcurrently(threadPoolTaskExecutor);
         //.toolProvider(toolProvider)
 
         if (modelConfig.getIsNet() != null && modelConfig.getIsNet() == 1) {
